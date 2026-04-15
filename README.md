@@ -10,16 +10,16 @@ Sibling forks used by this repo:
 
 ## Latest Comparison
 
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-15):
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-16):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 33.89 s | 31.41 s | Bun faster by 2.48 s |
-| Build total | 31.99 s | 29.67 s | Bun faster by 2.32 s |
-| Build prepare | 10.85 s | 10.47 s | Bun faster by 0.39 s |
-| Build `ui5` | 20.67 s | 18.80 s | Bun faster by 1.87 s |
-| Serve | 1.14 s | 1.09 s | Bun faster by 0.05 s |
-| Parity | 0.68 s | 0.56 s | Bun faster by 0.12 s |
+| Overall wall time | 39.79 s | 37.42 s | Bun faster by 2.36 s |
+| Build total | 37.62 s | 35.44 s | Bun faster by 2.19 s |
+| Build prepare | 12.33 s | 12.07 s | Bun faster by 0.26 s |
+| Build `ui5` | 24.70 s | 22.84 s | Bun faster by 1.86 s |
+| Serve | 1.31 s | 1.23 s | Bun faster by 0.08 s |
+| Parity | 0.75 s | 0.66 s | Bun faster by 0.09 s |
 
 ## Installation
 
@@ -73,7 +73,11 @@ Useful commands:
 - `npm run test:fixtures:node` runs the same fixture suite on Node against the CLI fork
 - `npm run compare:fixtures` runs both runtimes back to back, prints wall-clock timing, phase totals, build subphase totals, and the biggest per-fixture deltas
 - `npm run profile:fixture:bun -- --only project/application.h --repeat 3` reruns a selected Bun fixture step from a clean test state and prints min/avg/max timings plus build prep versus ui5 timing when applicable
+- `npm run profile:build-variant:bun -- --fixture builder/theme.heavy.library --repeat 3 --css-variables` profiles one build fixture repeatedly and supports task filtering like `--include-task` or `--exclude-task`
 - `npm run smoke:build` checks the build path and verifies `dist/custom-task-marker.txt`
+- `npm run smoke:theme` checks a theme-heavy library build and verifies CSS variable output
+- `npm run smoke:workspace` builds and serves the local workspace example to verify cross-project resolution
+- `npm run smoke:serve:native` checks the native Bun HTTP/1 serve path and verifies the middleware response header
 - `npm run smoke:serve:h2` checks the HTTP/2 serve path and verifies the middleware response header
 - `npm run serve:h2` starts the sample app manually over HTTP/2
 - `npm run ui5 -- --version` runs the UI5 CLI through the sibling Bun fork
