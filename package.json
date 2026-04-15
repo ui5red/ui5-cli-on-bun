@@ -10,6 +10,7 @@
 	},
 	"scripts": {
 		"setup:forks": "node ./scripts/bootstrap-forks.mjs",
+		"bun:build:fork": "node ./scripts/build-bun-fork.mjs",
 		"ui5": "node ./scripts/run-ui5-with-local-bun.mjs",
 		"certs": "node ./scripts/ensure-certificates.mjs",
 		"serve:h2": "npm run certs && node ./scripts/run-ui5-with-local-bun.mjs serve --h2 --key ./certs/server.key --cert ./certs/server.crt",

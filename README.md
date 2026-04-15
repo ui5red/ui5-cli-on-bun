@@ -5,22 +5,22 @@ It keeps the demo and test assets outside the two forks while verifying the impo
 
 ## Installation
 
-Run the following commands to set up the repository and the sibling forks:
+Run everything from this repository only:
 
 ```sh
 git clone https://github.com/ui5red/ui5-cli-on-bun.git
 cd ui5-cli-on-bun
+npm install
 npm run setup:forks
-
-cd ../cli
-npm install
 npm run bun:build:fork
-
-cd ../ui5-cli-on-bun
-npm install
 ```
 
-`npm run setup:forks` clones the sibling `bun` and `cli` forks automatically if they are missing.
+`npm run setup:forks` clones the sibling `bun` and `cli` forks automatically if they are missing and installs the dependencies they need.
+
+`npm run bun:build:fork` builds the custom Bun debug binary used by this validation app.
+
+These setup steps require a Bun executable on your `PATH` to bootstrap the custom Bun fork build.
+If you want to use a specific bootstrap Bun executable, set `BOOTSTRAP_BUN` before running the setup commands.
 
 If you already have a Bun binary you want to test, set `BUN_FORK_BINARY` before running the commands below.
 

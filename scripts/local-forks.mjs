@@ -2,6 +2,7 @@ import {spawn} from "node:child_process";
 import {access} from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import {createQuietBunEnv} from "./fork-helpers.mjs";
 
 const sampleRoot = path.resolve(import.meta.dirname, "..");
 
@@ -75,7 +76,7 @@ export async function spawnUi5(ui5Args, options = {}) {
 
 	return spawn(bunBinary, [ui5CliEntry, ...ui5Args], {
 		cwd: options.cwd || sampleRoot,
-		env: options.env || process.env,
+		env: createQuietBunEnv(options.env || process.env),
 		stdio: options.stdio || "inherit",
 		signal: options.signal
 	});
