@@ -5,7 +5,6 @@ import {
 	createQuietBunEnv,
 	ensureBunInstall,
 	ensureGitCheckout,
-	getBootstrapBunCommand,
 	getBootstrapBunMissingMessage,
 	pathExists,
 	runCommand,
@@ -57,7 +56,7 @@ await ensureBunInstall({
 
 if (cleanBuild) {
 	console.log(`Cleaning Bun fork build outputs in ${bunRepoDir}`);
-	await runCommand(getBootstrapBunCommand(), ["run", "clean"], {
+	await runCommand("bun", ["run", "clean"], {
 		cwd: bunRepoDir,
 		env: createQuietBunEnv(process.env),
 		missingCommandMessage: getBootstrapBunMissingMessage(),
@@ -65,7 +64,7 @@ if (cleanBuild) {
 }
 
 console.log(`Building Bun fork (${buildProfile.label}) in ${bunRepoDir}`);
-await runCommand(getBootstrapBunCommand(), ["run", buildProfile.script], {
+await runCommand("bun", ["run", buildProfile.script], {
 	cwd: bunRepoDir,
 	env: createQuietBunEnv(process.env),
 	missingCommandMessage: getBootstrapBunMissingMessage(),

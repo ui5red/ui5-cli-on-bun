@@ -67,6 +67,20 @@ function formatDuration(milliseconds) {
 	return `${(milliseconds / 1000).toFixed(2)} s`;
 }
 
+function summarizeSubphaseDurations(reports, compositeKey, subphaseKey) {
+	const durations = reports.flatMap((report) => report.results)
+		.filter((record) => `${record.kind}:${record.key}` === compositeKey)
+		.map((record) => record.details?.subphaseTotals?.[subphaseKey])
+		.filter((value) => typeof value === "number");
+
+	if (!durations.length) {
+		return null;
+	}
+
+	const average = durations.reduce((sum, value) => sum + value, 0) / durations.length;
+	return `avg ${formatDuration(average)}, min ${formatDuration(Math.min(...durations))}, max ${formatDuration(Math.max(...durations))}`;
+}
+
 async function runProfilePass(reportPath) {
 	await removeGeneratedNodeModules(testRoot);
 
@@ -142,9 +156,23 @@ function summarizeReports(reports) {
 
 	for (const [compositeKey, durations] of sortedEntries) {
 		const average = durations.reduce((sum, value) => sum + value, 0) / durations.length;
+		const prepareSummary = summarizeSubphaseDurations(reports, compositeKey, "prepareMs");
+		const ui5BuildSummary = summarizeSubphaseDurations(reports, compositeKey, "ui5BuildMs");
+		let detailSuffix = "";
+		if (prepareSummary || ui5BuildSummary) {
+			const subphaseParts = [];
+			if (prepareSummary) {
+				subphaseParts.push(`prep ${prepareSummary}`);
+			}
+			if (ui5BuildSummary) {
+				subphaseParts.push(`ui5 ${ui5BuildSummary}`);
+			}
+			detailSuffix = ` (${subphaseParts.join("; ")})`;
+		}
+
 		console.log(
 			`- ${compositeKey.replace(":", " ")}: avg ${formatDuration(average)}, ` +
-			`min ${formatDuration(Math.min(...durations))}, max ${formatDuration(Math.max(...durations))}`
+			`min ${formatDuration(Math.min(...durations))}, max ${formatDuration(Math.max(...durations))}${detailSuffix}`
 		);
 	}
 }

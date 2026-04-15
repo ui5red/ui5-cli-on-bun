@@ -1,6 +1,5 @@
 node_modules/
 dist/
 .ui5/
-.env.local
 certs/*.crt
 certs/*.key

@@ -49,6 +49,10 @@ function formatDuration(milliseconds) {
 	return `${(milliseconds / 1000).toFixed(2)} s`;
 }
 
+function formatSignedDuration(milliseconds) {
+	return milliseconds >= 0 ? `+${formatDuration(milliseconds)}` : `-${formatDuration(Math.abs(milliseconds))}`;
+}
+
 function summarize(nodeDuration, bunDuration) {
 	const delta = nodeDuration - bunDuration;
 	if (delta > 0) {
@@ -66,9 +70,17 @@ function summarize(nodeDuration, bunDuration) {
 
 function formatFixtureDelta(entry) {
 	const ratio = entry.nodeDurationMs > 0 ? `${(entry.bunDurationMs / entry.nodeDurationMs).toFixed(2)}x` : "n/a";
-	const deltaLabel = entry.deltaMs >= 0 ? `+${formatDuration(entry.deltaMs)}` : `-${formatDuration(Math.abs(entry.deltaMs))}`;
+	const detailParts = [];
+	if (entry.kind === "build" && entry.nodeDetails?.subphaseTotals && entry.bunDetails?.subphaseTotals) {
+		const prepDeltaMs = (entry.bunDetails.subphaseTotals.prepareMs ?? 0) - (entry.nodeDetails.subphaseTotals.prepareMs ?? 0);
+		const ui5BuildDeltaMs = (entry.bunDetails.subphaseTotals.ui5BuildMs ?? 0) - (entry.nodeDetails.subphaseTotals.ui5BuildMs ?? 0);
+		detailParts.push(`prep ${formatSignedDuration(prepDeltaMs)}`);
+		detailParts.push(`ui5 ${formatSignedDuration(ui5BuildDeltaMs)}`);
+	}
+
+	const detailSuffix = detailParts.length ? ` [${detailParts.join(", ")}]` : "";
 	return `${entry.kind} ${entry.key}: Node ${formatDuration(entry.nodeDurationMs)}, ` +
-		`Bun ${formatDuration(entry.bunDurationMs)}, delta ${deltaLabel} (${ratio})`;
+		`Bun ${formatDuration(entry.bunDurationMs)}, delta ${formatSignedDuration(entry.deltaMs)} (${ratio})${detailSuffix}`;
 }
 
 function collectFixtureDeltas(nodeReport, bunReport) {
@@ -87,10 +99,27 @@ function collectFixtureDeltas(nodeReport, bunReport) {
 			nodeDurationMs: nodeRecord.durationMs,
 			bunDurationMs: bunRecord.durationMs,
 			deltaMs: bunRecord.durationMs - nodeRecord.durationMs,
+			nodeDetails: nodeRecord.details,
+			bunDetails: bunRecord.details,
 		});
 	}
 
 	return deltas;
+}
+
+function printBuildSubphaseTotals(nodeReport, bunReport) {
+	const nodeBuildSubphaseTotals = nodeReport.summary.buildSubphaseTotals;
+	const bunBuildSubphaseTotals = bunReport.summary.buildSubphaseTotals;
+	if (!nodeBuildSubphaseTotals || !bunBuildSubphaseTotals) {
+		return;
+	}
+
+	console.log("\nBuild subphases");
+	for (const [label, key] of [["prepare", "prepareMs"], ["ui5", "ui5BuildMs"]]) {
+		const nodeDuration = nodeBuildSubphaseTotals[key] ?? 0;
+		const bunDuration = bunBuildSubphaseTotals[key] ?? 0;
+		console.log(`${label}: Node ${formatDuration(nodeDuration)}, Bun ${formatDuration(bunDuration)}, delta ${formatSignedDuration(bunDuration - nodeDuration)}`);
+	}
 }
 
 function printPhaseTotals(nodeReport, bunReport) {
@@ -195,6 +224,7 @@ try {
 	console.log(`Bun:  ${formatDuration(bunDuration)}`);
 	console.log(summarize(nodeDuration, bunDuration));
 	printPhaseTotals(nodeReport, bunReport);
+	printBuildSubphaseTotals(nodeReport, bunReport);
 	printFixtureDeltaSummary(nodeReport, bunReport);
 } finally {
 	if (reportDir) {

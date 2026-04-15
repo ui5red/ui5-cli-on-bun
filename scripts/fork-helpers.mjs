@@ -1,4 +1,3 @@
-import "./load-local-env.mjs";
 import {spawn} from "node:child_process";
 import {access} from "node:fs/promises";
 import path from "node:path";
@@ -26,14 +25,9 @@ export function createQuietBunEnv(baseEnv = process.env) {
 	return env;
 }
 
-export function getBootstrapBunCommand() {
-	return process.env.BOOTSTRAP_BUN || "bun";
-}
-
 export function getBootstrapBunMissingMessage() {
-	return "A Bun executable is required to bootstrap the custom Bun fork. " +
-		"Run `npm run setup:forks` to generate a repo-local .env.local automatically when `bun` is on PATH, " +
-		"or set BOOTSTRAP_BUN in .env.local to an explicit executable path.";
+	return "A Bun executable is required on PATH to bootstrap the custom Bun fork. " +
+		"Install Bun or make `bun` available on PATH before running `npm run setup:forks` or `npm run bun:build:fork`.";
 }
 
 export function runCommand(command, args, options = {}) {
@@ -110,7 +104,7 @@ export async function ensureBunInstall({name, repoDir}) {
 	}
 
 	console.log(`Installing ${name} Bun dependencies in ${repoDir}`);
-	await runCommand(getBootstrapBunCommand(), ["install"], {
+	await runCommand("bun", ["install"], {
 		cwd: repoDir,
 		env: createQuietBunEnv(process.env),
 		missingCommandMessage: getBootstrapBunMissingMessage(),

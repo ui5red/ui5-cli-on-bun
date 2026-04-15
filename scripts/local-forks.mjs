@@ -1,4 +1,3 @@
-import "./load-local-env.mjs";
 import {spawn} from "node:child_process";
 import {access} from "node:fs/promises";
 import path from "node:path";
@@ -50,7 +49,6 @@ export async function getUi5CliEntry() {
 export async function findBunBinary() {
 	const bunRepoDir = getBunRepoDir();
 	const candidates = [
-		process.env.BUN_FORK_BINARY,
 		path.join(bunRepoDir, "build", "release", "bun"),
 		path.join(bunRepoDir, "build", "release-local", "bun"),
 		path.join(bunRepoDir, "build", "debug-local", "bun-debug"),
@@ -67,7 +65,7 @@ export async function findBunBinary() {
 	}
 
 	throw new Error(
-		"No Bun binary found. Build the sibling Bun fork or set BUN_FORK_BINARY to an explicit executable path."
+		"No Bun binary found in the sibling Bun fork. Build the Bun fork first, for example with `npm run bun:build:fork`."
 	);
 }
 

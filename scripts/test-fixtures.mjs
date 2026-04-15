@@ -104,14 +104,35 @@ function durationSince(startTime) {
 	return Number(process.hrtime.bigint() - startTime) / 1_000_000;
 }
 
-function createTimingRecord(kind, key, status, durationMs, errorMessage) {
+function createTimingRecord(kind, key, status, durationMs, errorMessage, details) {
 	return {
 		kind,
 		key,
 		status,
 		durationMs,
 		...(errorMessage ? {errorMessage} : {}),
+		...(details ? {details} : {}),
 	};
+}
+
+function getBuildSubphaseTotals(timingRecords) {
+	return timingRecords.reduce((subphaseTotals, record) => {
+		if (record.kind !== "build") {
+			return subphaseTotals;
+		}
+
+		const buildSubphases = record.details?.subphaseTotals;
+		if (!buildSubphases) {
+			return subphaseTotals;
+		}
+
+		subphaseTotals.prepareMs += buildSubphases.prepareMs ?? 0;
+		subphaseTotals.ui5BuildMs += buildSubphases.ui5BuildMs ?? 0;
+		return subphaseTotals;
+	}, {
+		prepareMs: 0,
+		ui5BuildMs: 0,
+	});
 }
 
 function shouldRunFixture(kind, key) {
@@ -144,11 +165,20 @@ function printTimingSummary(timingRecords, suiteDurationMs) {
 	}
 
 	const phaseTotals = getPhaseTotals(timingRecords);
+	const buildSubphaseTotals = getBuildSubphaseTotals(timingRecords);
 	console.log(`Timing totals for ${runtimeMode}: ` +
 		`build ${formatDuration(phaseTotals.build)}, ` +
 		`serve ${formatDuration(phaseTotals.serve)}, ` +
 		`parity ${formatDuration(phaseTotals.parity)}, ` +
 		`overall ${formatDuration(suiteDurationMs)}`);
+
+	if (buildSubphaseTotals.prepareMs || buildSubphaseTotals.ui5BuildMs) {
+		console.log(
+			`Build breakdown for ${runtimeMode}: ` +
+			`prepare ${formatDuration(buildSubphaseTotals.prepareMs)}, ` +
+			`ui5 ${formatDuration(buildSubphaseTotals.ui5BuildMs)}`
+		);
+	}
 
 	const slowestFixtures = [...timingRecords]
 		.sort((left, right) => right.durationMs - left.durationMs)
@@ -398,21 +428,30 @@ async function runBuildFixture(category, name, tmpRoot, failures, timingRecords)
 	const cwd = path.join(testRoot, category, name);
 	const destDir = path.join(tmpRoot, category, name);
 	const startedAt = process.hrtime.bigint();
+	let activeSubphase = "prepare";
+	let prepareDurationMs = 0;
+	let ui5BuildDurationMs = 0;
 	let status = "pass";
 	let errorMessage;
 	let message = `PASS build ${key}`;
 	await mkdir(path.dirname(destDir), {recursive: true});
 
 	try {
+		const prepareStartedAt = process.hrtime.bigint();
 		await prepareFixture(cwd);
+		prepareDurationMs = durationSince(prepareStartedAt);
+		activeSubphase = "ui5";
+		const ui5BuildStartedAt = process.hrtime.bigint();
 		await runUi5Captured(["build", "--all", "--dest", destDir], cwd);
+		ui5BuildDurationMs = durationSince(ui5BuildStartedAt);
+		activeSubphase = "done";
 		if (expectedBuildFailures.has(key)) {
 			status = "unexpected-success";
 			failures.push(`${key}: expected failure but build succeeded`);
 			message = `FAIL ${key} (expected build failure)`;
 		}
 	} catch (error) {
-		if (expectedBuildFailures.has(key)) {
+		if (expectedBuildFailures.has(key) && activeSubphase === "ui5") {
 			status = "expected-failure";
 			message = `PASS expected-failure ${key}`;
 		} else {
@@ -423,9 +462,18 @@ async function runBuildFixture(category, name, tmpRoot, failures, timingRecords)
 		}
 	}
 
-	const timingRecord = createTimingRecord("build", key, status, durationSince(startedAt), errorMessage);
+	const timingRecord = createTimingRecord("build", key, status, durationSince(startedAt), errorMessage, {
+		subphaseTotals: {
+			prepareMs: prepareDurationMs,
+			ui5BuildMs: ui5BuildDurationMs,
+		},
+		...(activeSubphase !== "done" ? {failureSubphase: activeSubphase} : {}),
+	});
 	timingRecords.push(timingRecord);
-	console.log(`${message} (${formatDuration(timingRecord.durationMs)})`);
+	console.log(
+		`${message} (${formatDuration(timingRecord.durationMs)}, ` +
+		`prep ${formatDuration(prepareDurationMs)}, ui5 ${formatDuration(ui5BuildDurationMs)})`
+	);
 }
 
 async function runServerFixture(category, name, port, failures, timingRecords) {
@@ -557,6 +605,7 @@ if (!selectedFixtureCount) {
 
 const suiteDurationMs = durationSince(suiteStartedAt);
 const phaseTotals = getPhaseTotals(timingRecords);
+const buildSubphaseTotals = getBuildSubphaseTotals(timingRecords);
 
 const fixtureReport = {
 	runtimeMode,
@@ -569,6 +618,7 @@ const fixtureReport = {
 		selectedFixtureCount,
 		totalWallTimeMs: suiteDurationMs,
 		phaseTotals,
+		buildSubphaseTotals,
 	},
 	results: timingRecords,
 };

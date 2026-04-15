@@ -137,9 +137,10 @@ Files involved:
 What changed:
 
 - Per-step timings were added to the fixture runner.
+- Build fixtures now record subphase timings for dependency preparation versus actual `ui5 build` execution.
 - The runner now records structured reports when `--report` is provided.
-- `compare:fixtures` now runs Node and Bun back to back, compares the reports, prints wall-clock totals, phase totals, and the largest Bun regressions and wins.
-- `profile:fixture:bun` and `profile:fixture:node` rerun filtered fixture steps from a clean test state and summarize min/avg/max timings across repeated runs.
+- `compare:fixtures` now runs Node and Bun back to back, compares the reports, prints wall-clock totals, phase totals, build subphase totals, and the largest Bun regressions and wins.
+- `profile:fixture:bun` and `profile:fixture:node` rerun filtered fixture steps from a clean test state and summarize min/avg/max timings across repeated runs, including build prep versus `ui5` timings when the selected fixture is a build case.
 - The compare runner uses a lock file so overlapping comparisons cannot corrupt results.
 - The compare runner now cleans up temporary report directories even on failure.
 
@@ -221,6 +222,18 @@ Interpretation:
 
 - Bun is not losing overall because of serve or parity checks.
 - The slowdown is concentrated in build-heavy fixture steps.
+- After splitting build steps into subphases, the dominant regression is inside the actual `ui5 build` phase rather than dependency preparation.
+
+Subphase breakdown from the latest comparison:
+
+- Build prepare: Node `10.90 s`, Bun `14.68 s`
+- Build `ui5`: Node `21.10 s`, Bun `48.67 s`
+
+Interpretation of the subphase split:
+
+- Build preparation contributes some noise and some smaller regressions.
+- The main optimization target is now clearly the Bun path inside `ui5 build` itself.
+- Some one-off prep spikes appeared in full-suite runs, but repeated focused profiles show the stable regression is still primarily in the `ui5` portion.
 
 Largest Bun regressions observed:
 
@@ -252,6 +265,13 @@ Interpretation:
 
 - The `application.c2` slowdown is stable across reruns and not just a one-off outlier.
 
+Additional focused evaluation after adding build subphase timings:
+
+- `project/application.c` and related `c2`/`c3` cases were profiled repeatedly under both runtimes.
+- Their dependency-prep timings are broadly similar between Node and Bun in focused reruns.
+- Their stable regression comes from the `ui5` portion, where Bun stays roughly `+0.9 s` to `+1.0 s` slower per fixture.
+- `project/application.b` shows the same shape: after an initial noisy prep outlier, the stable Bun regression remains concentrated in the `ui5 build` portion.
+
 ## Important Things Future Agents Should Preserve
 
 1. Do not switch benchmark runs back to `bun-debug` unless the explicit goal is Bun debug-runtime debugging instead of fair performance comparison.
@@ -282,3 +302,10 @@ This repo is no longer just a smoke-test wrapper. It now provides:
 - repo-local documentation for future agents
 
 Any future agent continuing the Bun optimization work should start from this document, then use the profiling commands above to narrow down the next hotspot before changing runtime or CLI behavior.
+
+## Latest Validation App State
+
+- `BOOTSTRAP_BUN`, `.env.local`, and `BUN_FORK_BINARY` were removed from the validation app.
+- A Bun executable on `PATH` is still required only to bootstrap the Bun fork itself before its local release binary exists.
+- Actual validation commands now always resolve the sibling Bun fork outputs, preferring `../bun/build/release/bun`, and the sibling CLI fork entrypoint.
+- Fresh `compare:fixtures` after that cleanup measured Node `33.50 s` vs Bun `31.83 s`, with Bun ahead by `1.67 s` overall and `1.65 s` on total build time.
