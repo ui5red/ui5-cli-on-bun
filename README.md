@@ -19,8 +19,17 @@ npm run bun:build:fork
 
 `npm run bun:build:fork` builds the custom Bun debug binary used by this validation app.
 
-These setup steps require a Bun executable on your `PATH` to bootstrap the custom Bun fork build.
-If you want to use a specific bootstrap Bun executable, set `BOOTSTRAP_BUN` before running the setup commands.
+These setup steps require a Bun executable to bootstrap the custom Bun fork build.
+
+If you want to keep that bootstrap Bun path local to this validation app only, create a `.env.local` file in this repository with:
+
+```sh
+BOOTSTRAP_BUN=/absolute/path/to/your/existing/bun
+```
+
+The scripts in `ui5-cli-on-bun` read `.env.local` automatically. The file is gitignored, it affects only this repository, and it does not modify your global shell environment or any other Bun setup.
+
+If `BOOTSTRAP_BUN` is not set in `.env.local` or in the command environment, the scripts fall back to `bun` from your `PATH`.
 
 If you already have a Bun binary you want to test, set `BUN_FORK_BINARY` before running the commands below.
 
