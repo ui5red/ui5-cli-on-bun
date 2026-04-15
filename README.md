@@ -3,6 +3,25 @@
 This repository is the standalone validation app for the Bun-enabled UI5 CLI work.
 It consumes the sibling `cli` and `bun` forks from the surrounding `bunnify` directory and keeps all demo-only assets here so those forks only contain the runtime and CLI changes that are required for Bun support.
 
+## Can this repo auto-download the other two forks?
+
+Not via a symlink.
+
+Git symlinks only store a path string. They do not clone other repositories, GitHub does not resolve them into remote checkouts, and a cloned repo would just contain a symlink that points to a path that probably does not exist on the recipient machine.
+
+The practical options are:
+
+- explicit bootstrap script: recommended here, because one shared repo can clone the sibling `bun` and `cli` forks on demand
+- git submodules: possible, but users still need `--recurse-submodules` or a follow-up submodule command, and the repo becomes pinned to exact commits of both forks
+
+This repo now provides a bootstrap script for the first option:
+
+```sh
+npm run setup:forks
+```
+
+That script clones the default `ui5red/bun` and `ui5red/cli` forks as siblings of this repository if they are missing.
+
 ## Repositories used together
 
 - Bun fork: <https://github.com/ui5red/bun>
@@ -44,6 +63,22 @@ This repo does not replace the Bun fork build instructions. It only assumes that
 
 ## Installation
 
+### Fast path: clone only this repo first
+
+If you want to share only this repository link, users can start here:
+
+```sh
+git clone https://github.com/ui5red/ui5-cli-on-bun.git
+cd ui5-cli-on-bun
+npm run setup:forks
+```
+
+That creates sibling `../bun` and `../cli` checkouts automatically when they are not already present.
+
+After that, continue with the dependency installation steps below.
+
+### Manual path: clone all three repos yourself
+
 1. Create a common parent directory and clone all three repositories as siblings:
 
 ```sh
@@ -78,6 +113,8 @@ If you already have a specific Bun binary you want to test, you can skip that he
 cd ~/projects/bunnify/ui5-cli-on-bun
 npm install
 ```
+
+If you used `npm run setup:forks`, adapt the paths above to wherever you cloned `ui5-cli-on-bun`.
 
 ## Running the validation app
 
@@ -128,6 +165,8 @@ If your repositories are not laid out exactly as siblings, set one or more of th
 - `UI5_CLI_REPO`: absolute path to the UI5 CLI fork checkout
 - `BUN_REPO`: absolute path to the Bun fork checkout
 - `BUN_FORK_BINARY`: absolute path to a prebuilt Bun executable
+- `UI5_CLI_GIT_URL`: alternate git URL for the CLI fork used by `npm run setup:forks`
+- `BUN_GIT_URL`: alternate git URL for the Bun fork used by `npm run setup:forks`
 
 Example:
 
