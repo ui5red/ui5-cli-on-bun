@@ -32,7 +32,8 @@ export function getBootstrapBunCommand() {
 
 export function getBootstrapBunMissingMessage() {
 	return "A Bun executable is required to bootstrap the custom Bun fork. " +
-		"Install Bun and make sure `bun` is on PATH, or set BOOTSTRAP_BUN to an explicit executable path.";
+		"Run `npm run setup:forks` to generate a repo-local .env.local automatically when `bun` is on PATH, " +
+		"or set BOOTSTRAP_BUN in .env.local to an explicit executable path.";
 }
 
 export function runCommand(command, args, options = {}) {

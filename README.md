@@ -17,11 +17,13 @@ npm run bun:build:fork
 
 `npm run setup:forks` clones the sibling `bun` and `cli` forks automatically if they are missing and installs the dependencies they need.
 
+If `.env.local` does not exist yet, `npm run setup:forks` also creates it automatically with a repo-local `BOOTSTRAP_BUN` entry that points to the Bun executable currently available on your `PATH`.
+
 `npm run bun:build:fork` builds the custom Bun debug binary used by this validation app.
 
 These setup steps require a Bun executable to bootstrap the custom Bun fork build.
 
-If you want to keep that bootstrap Bun path local to this validation app only, create a `.env.local` file in this repository with:
+If you want to keep that bootstrap Bun path local to this validation app only, you can also create or edit `.env.local` yourself with:
 
 ```sh
 BOOTSTRAP_BUN=/absolute/path/to/your/existing/bun
