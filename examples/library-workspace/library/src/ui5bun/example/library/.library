@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<library xmlns="http://www.sap.com/sap.ui.library.xsd">
+	<name>ui5bun.example.library</name>
+	<vendor>ui5-cli-on-bun</vendor>
+	<copyright>Validation example</copyright>
+	<version>${version}</version>
+	<documentation>Example library served through the forked UI5 CLI.</documentation>
+</library>

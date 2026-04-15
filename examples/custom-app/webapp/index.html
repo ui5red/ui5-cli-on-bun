@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>UI5 Bun Custom App</title>
+	<style>
+		:root {
+			font-family: "Avenir Next", "Segoe UI", sans-serif;
+			color: #132238;
+			background: linear-gradient(135deg, #f9f3e8 0%, #d9edf7 100%);
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: grid;
+			place-items: center;
+		}
+
+		main {
+			max-width: 42rem;
+			margin: 2rem;
+			padding: 2rem;
+			border-radius: 1.25rem;
+			background: rgba(255, 255, 255, 0.86);
+			box-shadow: 0 24px 60px rgba(19, 34, 56, 0.16);
+		}
+
+		h1 {
+			margin-top: 0;
+			font-size: clamp(2rem, 4vw, 3rem);
+		}
+
+		p {
+			line-height: 1.6;
+		}
+
+		strong {
+			color: #0b7285;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Custom app via forked Bun + forked UI5 CLI</h1>
+		<p>This example lives inside <code>examples/custom-app</code> and uses the local validation middleware and task packages.</p>
+		<p>Middleware header: <strong data-middleware>checking...</strong></p>
+		<p>Build marker: <strong>/custom-task-marker.txt</strong> is emitted during <code>ui5 build --all</code>.</p>
+	</main>
+	<script src="./main.js"></script>
+</body>
+</html>

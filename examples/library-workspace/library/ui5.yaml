@@ -1,0 +1,13 @@
+---
+specVersion: "4.0"
+type: library
+metadata:
+  name: ui5bun.example.library
+resources:
+  configuration:
+    paths:
+      src: src
+builder:
+  customTasks:
+    - name: ui5-cli-on-bun-task
+      afterTask: minify

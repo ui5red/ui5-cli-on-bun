@@ -1,0 +1,8 @@
+{
+	"name": "ui5bun.example.library-app",
+	"version": "0.1.0",
+	"private": true,
+	"dependencies": {
+		"ui5bun.example.library": "0.1.0"
+	}
+}

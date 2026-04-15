@@ -1,0 +1,9 @@
+{
+	"name": "ui5bun.example.custom-app",
+	"version": "0.1.0",
+	"private": true,
+	"dependencies": {
+		"ui5-cli-on-bun-middleware-package": "0.1.0",
+		"ui5-cli-on-bun-task-package": "0.1.0"
+	}
+}

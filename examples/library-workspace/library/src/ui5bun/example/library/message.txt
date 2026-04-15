@@ -1,0 +1,1 @@
+Library asset resolved through the forked UI5 CLI workspace graph.

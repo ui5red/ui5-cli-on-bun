@@ -1,0 +1,5 @@
+---
+specVersion: "4.0"
+type: application
+metadata:
+  name: ui5bun.example.libraryapp

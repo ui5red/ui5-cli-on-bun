@@ -1,0 +1,16 @@
+{
+	"sap.app": {
+		"id": "ui5bun.example.libraryapp",
+		"type": "application",
+		"title": "UI5 Bun Library Workspace App",
+		"applicationVersion": {
+			"version": "0.1.0"
+		}
+	},
+	"sap.ui5": {
+		"rootView": {
+			"viewName": "ui5bun.example.libraryapp",
+			"type": "HTML"
+		}
+	}
+}

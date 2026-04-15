@@ -80,38 +80,30 @@ Useful commands:
 
 Target a subset of the suite with `--only` when you want to focus on a specific fixture step, for example `npm run test:fixtures -- --only project/application.h` or `npm run test:fixtures:node -- --only parity:fs/glob`.
 
-## Run Against Local Projects
+## Controlled Examples
 
-To run an arbitrary local project through the sibling Bun fork and sibling UI5 CLI fork without copying it into this repo, point the wrapper at that project directory from this repository:
+This repository now includes example projects under `examples/` that are fully under local control and run through the sibling Bun fork plus the sibling UI5 CLI fork.
 
-```sh
-npm run ui5 -- --cwd /absolute/path/to/project serve
-npm run ui5 -- --cwd /absolute/path/to/project build --all --dest /tmp/ui5-build
-```
+### Example 1: Custom App
 
-For your example project:
+`examples/custom-app` is a small application that uses the local validation middleware and task packages.
 
-```sh
-npm run ui5 -- --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 serve
-```
+- `npm run example:custom-app:serve` serves the app and exposes the `X-Bun-Validation-Middleware: active` response header
+- `npm run example:custom-app:build` runs a full build and emits `dist/custom-task-marker.txt`
 
-If you want a one-liner from anywhere, add an alias:
+### Example 2: Library Workspace
 
-```sh
-alias ui5bun='node /Users/ui5red/Projects/bunnify/ui5-cli-on-bun/scripts/run-ui5-with-local-bun.mjs'
-```
+`examples/library-workspace` contains a library plus an application that resolves that library through `ui5-workspace.yaml`.
 
-Then you can run the same commands from any project location:
+- `npm run example:library:build` builds the standalone library example
+- `npm run example:workspace-app:serve` serves the application and resolves `/resources/ui5bun/example/library/message.txt` from the sibling library
+- `npm run example:workspace-app:build` builds the application together with the local library dependency
+
+To compare the same controlled example against Node while still using the same forked UI5 CLI, reuse the same scripts with `UI5_RUNTIME_MODE=node`, for example:
 
 ```sh
-ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 serve
-ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 build --all --dest /tmp/ui5-build
+UI5_RUNTIME_MODE=node npm run example:custom-app:build
+UI5_RUNTIME_MODE=node npm run example:workspace-app:serve
 ```
 
-If you want to compare the same external project against Node while still using the same forked UI5 CLI, reuse the same launcher and switch the runtime mode for that command:
-
-```sh
-UI5_RUNTIME_MODE=node ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 build --all --dest /tmp/ui5-node-build
-```
-
-That gives you a direct Bun-versus-Node comparison against the same CLI fork, on the same project, without changing your global `ui5` or Bun setup.
+These examples are the recommended way to verify that the forked Bun runtime and forked UI5 CLI can build and serve both application and library-style projects without changing an external application under test.

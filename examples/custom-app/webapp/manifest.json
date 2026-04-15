@@ -1,0 +1,16 @@
+{
+	"sap.app": {
+		"id": "ui5bun.example.customapp",
+		"type": "application",
+		"title": "UI5 Bun Custom App",
+		"applicationVersion": {
+			"version": "0.1.0"
+		}
+	},
+	"sap.ui5": {
+		"rootView": {
+			"viewName": "ui5bun.example.customapp",
+			"type": "HTML"
+		}
+	}
+}
