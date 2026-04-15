@@ -1,0 +1,8 @@
+---
+specVersion: "3.0"
+kind: extension
+type: server-middleware
+metadata:
+  name: ui5-cli-on-bun-middleware
+middleware:
+  path: lib/middleware.js

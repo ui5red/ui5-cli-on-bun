@@ -1,0 +1,24 @@
+{
+	"name": "ui5-cli-on-bun",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Standalone validation app for running the UI5 CLI fork on the sibling Bun fork",
+	"type": "module",
+	"engines": {
+		"node": "^22.20.0 || >=24.0.0",
+		"npm": ">= 8"
+	},
+	"scripts": {
+		"ui5": "node ./scripts/run-ui5-with-local-bun.mjs",
+		"certs": "node ./scripts/ensure-certificates.mjs",
+		"serve:h2": "npm run certs && node ./scripts/run-ui5-with-local-bun.mjs serve --h2 --key ./certs/server.key --cert ./certs/server.crt",
+		"build": "node ./scripts/run-ui5-with-local-bun.mjs build --all --dest ./dist",
+		"smoke:build": "node ./scripts/build-smoke.mjs",
+		"smoke:serve:h2": "node ./scripts/serve-h2-smoke.mjs",
+		"smoke": "npm run smoke:build && npm run smoke:serve:h2"
+	},
+	"dependencies": {
+		"ui5-cli-on-bun-middleware-package": "file:./extensions/middleware",
+		"ui5-cli-on-bun-task-package": "file:./extensions/task"
+	}
+}

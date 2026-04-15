@@ -1,0 +1,8 @@
+---
+specVersion: "3.0"
+kind: extension
+type: task
+metadata:
+  name: ui5-cli-on-bun-task
+task:
+  path: lib/task.js
