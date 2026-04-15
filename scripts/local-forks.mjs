@@ -51,10 +51,10 @@ export async function findBunBinary() {
 	const bunRepoDir = getBunRepoDir();
 	const candidates = [
 		process.env.BUN_FORK_BINARY,
-		path.join(bunRepoDir, "build", "debug", "bun-debug"),
 		path.join(bunRepoDir, "build", "release", "bun"),
 		path.join(bunRepoDir, "build", "release-local", "bun"),
-		path.join(bunRepoDir, "build", "debug-local", "bun-debug")
+		path.join(bunRepoDir, "build", "debug-local", "bun-debug"),
+		path.join(bunRepoDir, "build", "debug", "bun-debug")
 	].filter(Boolean);
 
 	for (const candidate of candidates) {
@@ -71,15 +71,51 @@ export async function findBunBinary() {
 	);
 }
 
-export async function spawnUi5(ui5Args, options = {}) {
-	const bunBinary = await findBunBinary();
-	const ui5CliEntry = await getUi5CliEntry();
+export function getRuntimeMode() {
+	return process.env.UI5_RUNTIME_MODE === "node" ? "node" : "bun";
+}
 
-	return spawn(bunBinary, [ui5CliEntry, ...ui5Args], {
+export async function findNodeBinary() {
+	return assertPathExists(
+		process.env.NODE_RUNTIME_BINARY || process.execPath,
+		"Node.js binary",
+		"Set NODE_RUNTIME_BINARY to an explicit executable path if the current Node binary should not be used."
+	);
+}
+
+function getRuntimeEnv(runtimeMode, env) {
+	return runtimeMode === "bun" ? createQuietBunEnv(env) : env;
+}
+
+export async function spawnRuntimeProcess(args, options = {}) {
+	const runtimeMode = options.runtimeMode || getRuntimeMode();
+	const runtimeBinary = runtimeMode === "bun" ? await findBunBinary() : await findNodeBinary();
+
+	return spawn(runtimeBinary, args, {
 		cwd: options.cwd || sampleRoot,
-		env: createQuietBunEnv(options.env || process.env),
+		env: getRuntimeEnv(runtimeMode, options.env || process.env),
 		stdio: options.stdio || "inherit",
 		signal: options.signal
+	});
+}
+
+export async function spawnUi5(ui5Args, options = {}) {
+	const runtimeMode = options.runtimeMode || getRuntimeMode();
+	const runtimeBinary = runtimeMode === "bun" ? await findBunBinary() : await findNodeBinary();
+	const ui5CliEntry = await getUi5CliEntry();
+
+	return spawn(runtimeBinary, [ui5CliEntry, ...ui5Args], {
+		cwd: options.cwd || sampleRoot,
+		env: getRuntimeEnv(runtimeMode, options.env || process.env),
+		stdio: options.stdio || "inherit",
+		signal: options.signal
+	});
+}
+
+export async function spawnBun(args, options = {}) {
+	return spawnRuntimeProcess(args, {
+		...options,
+		runtimeMode: "bun"
 	});
 }
 

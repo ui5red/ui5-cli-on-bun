@@ -1,0 +1,33 @@
+---
+specVersion: "2.6"
+type: application
+metadata:
+  name: application.h
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+    propertiesFileSourceEncoding: ISO-8859-1
+builder:
+  bundles:
+    - bundleDefinition:
+        name: application/h/sectionsA/customBundle.js
+        defaultFileTypes:
+          - .js
+        sections:
+          - mode: preload
+            filters:
+              - application/h/sectionsA/
+              - '!application/h/sectionsA/section2**'
+      bundleOptions:
+        optimize: true
+    - bundleDefinition:
+        name: application/h/sectionsB/customBundle.js
+        defaultFileTypes:
+          - .js
+        sections:
+          - mode: preload
+            filters:
+              - application/h/sectionsB/
+      bundleOptions:
+        optimize: false

@@ -1,0 +1,20 @@
+---
+specVersion: "2.6"
+type: application
+metadata:
+  name: application.k
+  copyright: Some fancy copyright
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+    propertiesFileSourceEncoding: ISO-8859-1
+builder:
+  componentPreload:
+    namespaces:
+      - application/k
+      - application/k/subcomponentA
+      - application/k/subcomponentB
+    excludes:
+      - application/k/**/thirdparty/
+      - '!application/k/subcomponentB/thirdparty/'

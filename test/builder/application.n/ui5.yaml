@@ -1,0 +1,10 @@
+---
+specVersion: "2.6"
+type: application
+metadata:
+  name: application.n
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+    propertiesFileSourceEncoding: ISO-8859-1

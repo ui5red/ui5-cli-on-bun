@@ -1,0 +1,15 @@
+---
+specVersion: "2.6"
+type: application
+metadata:
+  name: application.l
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+    propertiesFileSourceEncoding: ISO-8859-1
+builder:
+  minification:
+    excludes:
+      - application/l/**/thirdparty/**
+      - '!application/l/subdir/thirdparty/File1.js'
