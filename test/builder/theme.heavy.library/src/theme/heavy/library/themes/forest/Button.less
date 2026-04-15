@@ -1,0 +1,13 @@
+.themeHeavyButton {
+	background: @primaryColor;
+	border: 1px solid darken(@primaryColor, 8%);
+	border-radius: @spacing;
+	color: contrast(@primaryColor, #111111, #ffffff, 60%);
+	margin-left: @spacing;
+	padding: @spacing (@spacing * 3) @spacing (@spacing * 2);
+}
+
+.themeHeavyButton:hover {
+	background: lighten(@primaryColor, 6%);
+	box-shadow: inset 0 0 0 1px fade(#ffffff, 20%);
+}

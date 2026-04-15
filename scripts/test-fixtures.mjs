@@ -31,6 +31,7 @@ const buildFixturesByCategory = {
 		"application.m",
 		"application.n",
 		"application.o",
+		"theme.heavy.library",
 		"application.ø",
 	],
 	project: [

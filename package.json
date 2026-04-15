@@ -19,6 +19,8 @@
 		"compare:fixtures": "node ./scripts/compare-runtimes.mjs",
 		"profile:fixture:bun": "node ./scripts/profile-runtime-fixture.mjs bun",
 		"profile:fixture:node": "node ./scripts/profile-runtime-fixture.mjs node",
+		"profile:build-variant:bun": "node ./scripts/profile-build-variant.mjs bun",
+		"profile:build-variant:node": "node ./scripts/profile-build-variant.mjs node",
 		"ui5": "node ./scripts/run-ui5-with-local-bun.mjs",
 		"example:custom-app:serve": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app serve --open /index.html",
 		"example:custom-app:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app build --all --dest ./dist",
@@ -29,8 +31,11 @@
 		"serve:h2": "npm run certs && node ./scripts/run-ui5-with-local-bun.mjs serve --h2 --key ./certs/server.key --cert ./certs/server.crt",
 		"build": "node ./scripts/run-ui5-with-local-bun.mjs build --all --dest ./dist",
 		"smoke:build": "node ./scripts/build-smoke.mjs",
+		"smoke:theme": "node ./scripts/theme-build-smoke.mjs",
+		"smoke:workspace": "npm run example:workspace-app:build && node ./scripts/workspace-serve-smoke.mjs",
+		"smoke:serve:native": "node ./scripts/serve-native-smoke.mjs",
 		"smoke:serve:h2": "node ./scripts/serve-h2-smoke.mjs",
-		"smoke": "npm run smoke:build && npm run smoke:serve:h2"
+		"smoke": "npm run smoke:build && npm run smoke:theme && npm run smoke:workspace && npm run smoke:serve:native && npm run smoke:serve:h2"
 	},
 	"dependencies": {
 		"ui5-cli-on-bun-middleware-package": "file:./extensions/middleware",
