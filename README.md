@@ -65,7 +65,6 @@ For a quick end-to-end sanity check, keep the smoke run:
 npm run smoke
 ```
 
-
 Useful commands:
 
 - `npm run bun:build:fork:debug` builds a Bun debug binary when you explicitly need a debug executable
@@ -80,3 +79,39 @@ Useful commands:
 - `npm run ui5 -- --version` runs the UI5 CLI through the sibling Bun fork
 
 Target a subset of the suite with `--only` when you want to focus on a specific fixture step, for example `npm run test:fixtures -- --only project/application.h` or `npm run test:fixtures:node -- --only parity:fs/glob`.
+
+## Run Against Local Projects
+
+To run an arbitrary local project through the sibling Bun fork and sibling UI5 CLI fork without copying it into this repo, point the wrapper at that project directory from this repository:
+
+```sh
+npm run ui5 -- --cwd /absolute/path/to/project serve
+npm run ui5 -- --cwd /absolute/path/to/project build --all --dest /tmp/ui5-build
+```
+
+For your example project:
+
+```sh
+npm run ui5 -- --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 serve
+```
+
+If you want a one-liner from anywhere, add an alias:
+
+```sh
+alias ui5bun='node /Users/ui5red/Projects/bunnify/ui5-cli-on-bun/scripts/run-ui5-with-local-bun.mjs'
+```
+
+Then you can run the same commands from any project location:
+
+```sh
+ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 serve
+ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 build --all --dest /tmp/ui5-build
+```
+
+If you want to compare the same external project against Node while still using the same forked UI5 CLI, reuse the same launcher and switch the runtime mode for that command:
+
+```sh
+UI5_RUNTIME_MODE=node ui5bun --cwd /Users/ui5red/Projects/ux.eng.s4producthomes1 build --all --dest /tmp/ui5-node-build
+```
+
+That gives you a direct Bun-versus-Node comparison against the same CLI fork, on the same project, without changing your global `ui5` or Bun setup.
