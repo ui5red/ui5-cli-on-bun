@@ -8,9 +8,34 @@ Sibling forks used by this repo:
 - Bun fork: [ui5red/bun](https://github.com/ui5red/bun)
 - UI5 CLI fork: [ui5red/cli](https://github.com/ui5red/cli)
 
+## Latest Comparison
+
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-15):
+
+| Metric | Node | Bun | Delta |
+| --- | ---: | ---: | ---: |
+| Overall wall time | 33.50 s | 31.83 s | Bun faster by 1.67 s |
+| Build total | 31.68 s | 30.03 s | Bun faster by 1.65 s |
+| Build prepare | 10.49 s | 10.38 s | Bun faster by 0.11 s |
+| Build `ui5` | 20.73 s | 19.22 s | Bun faster by 1.52 s |
+| Serve | 1.09 s | 1.13 s | Node faster by 0.05 s |
+| Parity | 0.64 s | 0.58 s | Bun faster by 0.06 s |
+
 ## Installation
 
-Run everything from this repository only:
+Prerequisites:
+
+- Node.js `^22.20.0 || >=24.0.0`
+- `npm >= 8`
+- Bun available on your `PATH`
+
+If Bun is not installed yet:
+
+```sh
+curl -fsSL https://bun.sh/install | bash
+```
+
+From the `ui5-cli-on-bun` repository root, run:
 
 ```sh
 git clone https://github.com/ui5red/ui5-cli-on-bun.git
@@ -26,24 +51,20 @@ npm run bun:build:fork
 
 These setup steps still require a Bun executable on your `PATH`, but only to bootstrap the Bun fork itself. The Bun repository uses `bun install` and `bun run build:release` before its own custom binary exists.
 
-The validation runs themselves do not use your system Bun. Once the fork has been built, this repo resolves:
-
-- the Bun runtime from the sibling `../bun/build/release/bun` first, with the other Bun fork build outputs only as fallback if that release binary is not present yet
-- the UI5 CLI entrypoint from the sibling `../cli/packages/cli/bin/ui5.cjs`
-
-That isolation is the reason the validation app does not need `BOOTSTRAP_BUN` or a generated `.env.local` file anymore.
-
-In other words: your globally installed Bun is used only to bootstrap the Bun fork build itself. Commands such as `npm run ui5`, `npm run build`, `npm run serve:h2`, `npm run smoke`, `npm run test:fixtures`, and `npm run compare:fixtures` execute the local Bun fork binary from this validation setup, not your global Bun installation.
-
-If your fork checkouts do not live next to this repository, set `BUN_REPO` and `UI5_CLI_REPO` in the command environment when running the scripts.
-
 ## Run
 
-Run the full validation:
+Start with the side-by-side runtime comparison:
+
+```sh
+npm run compare:fixtures
+```
+
+For a quick end-to-end sanity check, keep the smoke run:
 
 ```sh
 npm run smoke
 ```
+
 
 Useful commands:
 
@@ -57,16 +78,5 @@ Useful commands:
 - `npm run smoke:serve:h2` checks the HTTP/2 serve path and verifies the middleware response header
 - `npm run serve:h2` starts the sample app manually over HTTP/2
 - `npm run ui5 -- --version` runs the UI5 CLI through the sibling Bun fork
-
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-15):
-
-| Metric | Node | Bun | Delta |
-| --- | ---: | ---: | ---: |
-| Overall wall time | 33.50 s | 31.83 s | Bun faster by 1.67 s |
-| Build total | 31.68 s | 30.03 s | Bun faster by 1.65 s |
-| Build prepare | 10.49 s | 10.38 s | Bun faster by 0.11 s |
-| Build `ui5` | 20.73 s | 19.22 s | Bun faster by 1.52 s |
-| Serve | 1.09 s | 1.13 s | Node faster by 0.05 s |
-| Parity | 0.64 s | 0.58 s | Bun faster by 0.06 s |
 
 Target a subset of the suite with `--only` when you want to focus on a specific fixture step, for example `npm run test:fixtures -- --only project/application.h` or `npm run test:fixtures:node -- --only parity:fs/glob`.
