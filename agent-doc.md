@@ -309,3 +309,40 @@ Any future agent continuing the Bun optimization work should start from this doc
 - A Bun executable on `PATH` is still required only to bootstrap the Bun fork itself before its local release binary exists.
 - Actual validation commands now always resolve the sibling Bun fork outputs, preferring `../bun/build/release/bun`, and the sibling CLI fork entrypoint.
 - Fresh `compare:fixtures` after that cleanup measured Node `33.50 s` vs Bun `31.83 s`, with Bun ahead by `1.67 s` overall and `1.65 s` on total build time.
+
+## 2026-04-16 Self-Contained Bun.build Spike
+
+Files involved:
+
+- `examples/self-contained-bundler-spike/**`
+- `scripts/self-contained-bundler-spike.mjs`
+- `package.json`
+- `README.md`
+- `examples/README.md`
+
+What changed:
+
+- Added a deliberately small standalone example app that is authored as plain HTML plus ESM JavaScript instead of `sap.ui.define` modules.
+- Added `npm run spike:self-contained-bundler` to run two paths side by side:
+  - `ui5 build self-contained --all`
+  - `Bun.build()` against the example's HTML entrypoint
+- Updated the root README with a short experiment summary describing the coordinated Bun fork, UI5 CLI fork, and validation-app changes, including why Bun serve was pursued and why Bun build was not.
+
+Why this spike exists:
+
+- The main UI5 build path is graph-driven and uses the LBT bundler for preload, raw, require, and bundleInfo sections across multiple resource types.
+- `Bun.build` only becomes a plausible comparison point in a narrow self-contained, entrypoint-oriented scenario.
+- The spike exists to document that boundary with a runnable command instead of only a theoretical conclusion.
+
+Validated result:
+
+- The UI5 self-contained build completed, but the current LBT path logged parse errors for ESM `import` and `export` in `main.js` and `message.js`.
+- The emitted `sap-ui-custom.js` only contained preload content for `manifest.json` plus placeholder `undefined` lines for the failed modules.
+- The HTML bootstrap transform did not apply because the spike app intentionally uses a plain `<script type="module">` entrypoint rather than the UI5 bootstrap tag.
+- The Bun.build path bundled the same ESM app naturally into an HTML entrypoint plus JS chunk.
+- The spike script now writes its scratch output under the OS temp directory instead of the repo so the validation repo stays clean before a push.
+
+Interpretation:
+
+- This confirms the current architectural conclusion: Bun.build is useful as a narrow self-contained experiment on ESM-friendly sources, but it is not a drop-in replacement for the standard UI5 build or preload/custom bundle paths.
+- The spike should be preserved as an explanatory artifact and not expanded into the main validation suite unless the underlying UI5 module expectations change.

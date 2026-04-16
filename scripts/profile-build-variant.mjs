@@ -19,6 +19,7 @@ const includeTasks = [];
 const excludeTasks = [];
 let cleanInstalls = false;
 let cssVariables = false;
+let selfContained = false;
 
 for (let index = 0; index < optionArgs.length; index += 1) {
 	const arg = optionArgs[index];
@@ -66,6 +67,9 @@ for (let index = 0; index < optionArgs.length; index += 1) {
 		break;
 	case "--css-variables":
 		cssVariables = true;
+		break;
+	case "--self-contained":
+		selfContained = true;
 		break;
 	default:
 		throw new Error(`Unknown argument: ${arg}`);
@@ -212,6 +216,7 @@ function summarizeDurations(durations) {
 async function runUi5Build(destDir) {
 	const ui5Args = [
 		"build",
+		...(selfContained ? ["self-contained"] : []),
 		"--all",
 		"--dest",
 		destDir,
@@ -277,6 +282,9 @@ try {
 	console.log(`Runtime: ${runtimeMode}`);
 	console.log(`Prepare once: ${formatDuration(prepareDurationMs)}`);
 	console.log(`Build runs: ${summarizeDurations(runDurations)}`);
+	if (selfContained) {
+		console.log("Build mode: self-contained");
+	}
 	if (cssVariables) {
 		console.log("CSS variables: enabled");
 	}

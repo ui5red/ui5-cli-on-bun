@@ -1,0 +1,9 @@
+---
+specVersion: "4.0"
+type: application
+metadata:
+  name: self-contained-bundler-spike
+resources:
+  configuration:
+    paths:
+      webapp: webapp

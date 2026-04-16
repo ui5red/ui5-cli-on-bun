@@ -35,7 +35,7 @@ Profile a selected fixture repeatedly from a clean test state with:
 npm run profile:fixture:bun -- --only project/application.h --repeat 3
 ```
 
-For build fixtures, the profiler also reports the split between fixture preparation time and the actual `ui5 build` execution time.
+For build fixtures, the profiler also reports the split between fixture preparation time and the actual `ui5 build` execution time. Add `--self-contained` when you want to benchmark `ui5 build self-contained --all` instead of the default build mode.
 
 Target a subset of fixture steps in either runtime suite with `--only`, for example:
 

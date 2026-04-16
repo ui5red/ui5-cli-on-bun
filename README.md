@@ -35,7 +35,7 @@ If Bun is not installed yet:
 curl -fsSL https://bun.sh/install | bash
 ```
 
-From the `ui5-cli-on-bun` repository root, run:
+Then clone this repository and run the setup commands:
 
 ```sh
 git clone https://github.com/ui5red/ui5-cli-on-bun.git
@@ -50,6 +50,32 @@ npm run bun:build:fork
 `npm run bun:build:fork` builds the custom Bun release binary used by this validation app.
 
 These setup steps still require a Bun executable on your `PATH`, but only to bootstrap the Bun fork itself. The Bun repository uses `bun install` and `bun run build:release` before its own custom binary exists.
+
+## Experiment Summary
+
+This repository validates coordinated changes across the sibling UI5 CLI fork, the sibling Bun fork, and this standalone app.
+
+UI5 CLI fork:
+
+- Added a Bun-native HTTP/1 serve path so `ui5 serve` can use Bun's server stack while preserving the existing middleware contract.
+- Restored Bun-specific non-worker execution for `minify` and `buildThemes` after profiling showed the worker-based path was the main source of Bun build regressions.
+- Kept the graph-driven build and the existing UI5 LBT bundling pipeline in place. We evaluated whether Bun-native bundling could replace that path and did not take it forward as the main plan.
+
+Bun fork:
+
+- The validation flow now targets Bun release binaries for fair comparisons instead of accidentally picking debug builds.
+- Serve-side evaluation showed Bun is a good fit for the HTTP server path, especially for the native HTTP/1 experiment that is now covered by smoke tests.
+
+Validation app:
+
+- Added copied fixture coverage, runtime comparison commands, focused profiling commands, smoke checks for build, theme, workspace, and native serve behavior, plus a theme-heavy builder fixture.
+- Added a narrow self-contained bundler spike with `npm run spike:self-contained-bundler` to compare a real UI5 self-contained build against a dedicated Bun.build HTML+ESM bundle.
+
+Observations:
+
+- Switching the serve path to Bun was worth pursuing because it improved the Bun-native serve path without changing the UI5 middleware model used by this repo.
+- Native Bun build is not the general build direction for this experiment. UI5's main build path is graph- and resource-driven, and preload/custom bundles rely on UI5-specific semantics that do not map cleanly to `Bun.build`.
+- The self-contained spike is intentionally narrow: Bun.build handled the dedicated ESM example naturally, while the current UI5 self-contained bundler logged parse errors for ESM `import` and `export` and emitted only a minimal preload-oriented bundle. That makes it useful as a boundary check, not as a drop-in replacement plan.
 
 ## Run
 
@@ -73,7 +99,8 @@ Useful commands:
 - `npm run test:fixtures:node` runs the same fixture suite on Node against the CLI fork
 - `npm run compare:fixtures` runs both runtimes back to back, prints wall-clock timing, phase totals, build subphase totals, and the biggest per-fixture deltas
 - `npm run profile:fixture:bun -- --only project/application.h --repeat 3` reruns a selected Bun fixture step from a clean test state and prints min/avg/max timings plus build prep versus ui5 timing when applicable
-- `npm run profile:build-variant:bun -- --fixture builder/theme.heavy.library --repeat 3 --css-variables` profiles one build fixture repeatedly and supports task filtering like `--include-task` or `--exclude-task`
+- `npm run profile:build-variant:bun -- --fixture builder/theme.heavy.library --repeat 3 --css-variables` profiles one build fixture repeatedly, supports task filtering like `--include-task` or `--exclude-task`, and can switch to self-contained mode with `--self-contained`
+- `npm run spike:self-contained-bundler` compares a UI5 self-contained build against a narrow Bun.build HTML+ESM spike and prints the structural difference
 - `npm run smoke:build` checks the build path and verifies `dist/custom-task-marker.txt`
 - `npm run smoke:theme` checks a theme-heavy library build and verifies CSS variable output
 - `npm run smoke:workspace` builds and serves the local workspace example to verify cross-project resolution
@@ -111,3 +138,10 @@ UI5_RUNTIME_MODE=node npm run example:workspace-app:serve
 ```
 
 These examples are the recommended way to verify that the forked Bun runtime and forked UI5 CLI can build and serve both application and library-style projects without changing an external application under test.
+
+### Example 3: Self-Contained Bundler Spike
+
+`examples/self-contained-bundler-spike` is a deliberately small HTML+ESM app used only to compare a UI5 self-contained build against `Bun.build` on a source shape that Bun can bundle natively.
+
+- `npm run spike:self-contained-bundler` runs both paths and prints the emitted bundle locations, sizes, timings, and the key observation
+- This example is intentionally not part of the main fixture suite because it is an architecture spike, not a compatibility target for the broader UI5 validation matrix
