@@ -6,7 +6,7 @@ They are kept separate from the automated `test/` fixtures so they can be explor
 
 Current contents:
 
-- `browsersync`: copied example from the sibling UI5 CLI repository
 - `custom-app`: application example used to validate custom task and middleware integration
 - `library-workspace`: application and library workspace example used to validate cross-project resolution
+- `sample.ts.app`: generated OpenUI5 TypeScript application used to validate a realistic app build and serve scenario with the sibling Bun fork and sibling CLI fork
 - `self-contained-bundler-spike`: narrow HTML+ESM comparison app for the `npm run spike:self-contained-bundler` experiment

@@ -1,4 +1,5 @@
 import UIComponent from "sap/ui/core/UIComponent";
+import JSONModel from "sap/ui/model/json/JSONModel";
 import models from "./model/models";
 import Device from "sap/ui/Device";
 
@@ -19,9 +20,24 @@ export default class Component extends UIComponent {
 
 		// create the device model
 		this.setModel(models.createDeviceModel(), "device");
+		const runtimeModel = new JSONModel({isBun: false});
+		this.setModel(runtimeModel, "runtime");
+		void this.loadRuntimeIndicator(runtimeModel);
 
 		// create the views based on the url/hash
 		this.getRouter().initialize();
+	}
+
+	private async loadRuntimeIndicator(runtimeModel: JSONModel): Promise<void> {
+		try {
+			const response = await fetch("/resources/sap-ui-version.json", {
+				method: "HEAD",
+				cache: "no-store"
+			});
+			runtimeModel.setProperty("/isBun", response.headers.get("x-ui5-runtime") === "bun");
+		} catch {
+			runtimeModel.setProperty("/isBun", false);
+		}
 	}
 
 	/**

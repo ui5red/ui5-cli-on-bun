@@ -26,6 +26,7 @@
 		"example:custom-app:serve": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app serve --open /index.html",
 		"example:custom-app:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app build --all --dest ./dist",
 		"example:sample-ts-app:serve": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/sample.ts.app serve --open /index.html",
+		"example:sample-ts-app:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/sample.ts.app build --all --dest ./dist",
 		"example:workspace-app:serve": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/library-workspace/app serve --open /index.html",
 		"example:workspace-app:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/library-workspace/app build --all --dest ./dist",
 		"example:library:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/library-workspace/library build --all --dest ./dist",

@@ -130,6 +130,13 @@ This repository now includes example projects under `examples/` that are fully u
 - `npm run example:workspace-app:serve` serves the application and resolves `/resources/ui5bun/example/library/message.txt` from the sibling library
 - `npm run example:workspace-app:build` builds the application together with the local library dependency
 
+### Example 3: Sample TypeScript App
+
+`examples/sample.ts.app` is a generated OpenUI5 TypeScript application that is kept under local control and exercised through the sibling Bun fork plus the sibling UI5 CLI fork.
+
+- `npm run example:sample-ts-app:serve` serves the app from the local forks and opens the sample UI
+- `npm run example:sample-ts-app:build` runs a full dependency-inclusive build and keeps the real `buildThemes` path active for the framework libraries and theme library
+
 To compare the same controlled example against Node while still using the same forked UI5 CLI, reuse the same scripts with `UI5_RUNTIME_MODE=node`, for example:
 
 ```sh
@@ -139,7 +146,7 @@ UI5_RUNTIME_MODE=node npm run example:workspace-app:serve
 
 These examples are the recommended way to verify that the forked Bun runtime and forked UI5 CLI can build and serve both application and library-style projects without changing an external application under test.
 
-### Example 3: Self-Contained Bundler Spike
+### Example 4: Self-Contained Bundler Spike
 
 `examples/self-contained-bundler-spike` is a deliberately small HTML+ESM app used only to compare a UI5 self-contained build against `Bun.build` on a source shape that Bun can bundle natively.
 
