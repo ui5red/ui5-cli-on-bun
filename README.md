@@ -14,12 +14,12 @@ Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-16):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 39.79 s | 37.42 s | Bun faster by 2.36 s |
-| Build total | 37.62 s | 35.44 s | Bun faster by 2.19 s |
-| Build prepare | 12.33 s | 12.07 s | Bun faster by 0.26 s |
-| Build `ui5` | 24.70 s | 22.84 s | Bun faster by 1.86 s |
-| Serve | 1.31 s | 1.23 s | Bun faster by 0.08 s |
-| Parity | 0.75 s | 0.66 s | Bun faster by 0.09 s |
+| Overall wall time | 49.40 s | 38.25 s | Bun faster by 11.15 s |
+| Build total | 45.86 s | 36.03 s | Bun faster by 9.83 s |
+| Build prepare | 15.83 s | 12.14 s | Bun faster by 3.69 s |
+| Build `ui5` | 29.44 s | 23.39 s | Bun faster by 6.05 s |
+| Serve | 2.56 s | 1.46 s | Bun faster by 1.10 s |
+| Parity | 0.86 s | 0.66 s | Bun faster by 0.20 s |
 
 ## Installation
 

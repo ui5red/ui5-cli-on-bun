@@ -2,5 +2,7 @@ node_modules/
 dist/
 .ui5/
 tmp/
+.compare-fixtures.lock
+compare-fixtures.log
 certs/*.crt
 certs/*.key
