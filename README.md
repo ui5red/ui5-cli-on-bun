@@ -10,16 +10,16 @@ Sibling forks used by this repo:
 
 ## Latest Comparison
 
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-16):
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-17):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 49.40 s | 38.25 s | Bun faster by 11.15 s |
-| Build total | 45.86 s | 36.03 s | Bun faster by 9.83 s |
-| Build prepare | 15.83 s | 12.14 s | Bun faster by 3.69 s |
-| Build `ui5` | 29.44 s | 23.39 s | Bun faster by 6.05 s |
-| Serve | 2.56 s | 1.46 s | Bun faster by 1.10 s |
-| Parity | 0.86 s | 0.66 s | Bun faster by 0.20 s |
+| Overall wall time | 39.85 s | 38.71 s | Bun faster by 1.14 s |
+| Build total | 37.74 s | 36.75 s | Bun faster by 0.99 s |
+| Build prepare | 12.40 s | 12.26 s | Bun faster by 0.15 s |
+| Build `ui5` | 24.76 s | 23.99 s | Bun faster by 0.78 s |
+| Serve | 1.25 s | 1.19 s | Bun faster by 0.06 s |
+| Parity | 0.74 s | 0.67 s | Bun faster by 0.08 s |
 
 ## Installation
 
@@ -57,14 +57,15 @@ This repository validates coordinated changes across the sibling UI5 CLI fork, t
 
 UI5 CLI fork:
 
-- Added a Bun-native HTTP/1 serve path so `ui5 serve` can use Bun's server stack while preserving the existing middleware contract.
-- Restored Bun-specific non-worker execution for `minify` and `buildThemes` after profiling showed the worker-based path was the main source of Bun build regressions.
+- Serve path uses Express on Bun for both HTTP/1 and HTTP/2 modes. An earlier experiment with a custom `BunNativeApp` (Bun.serve()-based Express reimplementation) was replaced in favour of standard Express, which works correctly on Bun out of the box. The BunNativeApp approach is preserved on the `experiment/bun-native-serve` branch for future Bun.serve() experimentation.
+- Worker-based theme building (`buildThemes`) is re-enabled on Bun using `workerType: "thread"` and `MessageChannel`/`MessagePort` for cross-thread fs communication. The `minify` task still uses single-threaded execution on Bun because workerpool's graceful termination can hang during task orchestration cleanup.
 - Kept the graph-driven build and the existing UI5 LBT bundling pipeline in place. We evaluated whether Bun-native bundling could replace that path and did not take it forward as the main plan.
 
 Bun fork:
 
+- Improved `process.binding("stream_wrap")` shim to return a `Uint8Array` for `streamBaseState`, matching Node.js behaviour.
+- Added keep-in-sync comments to the HTTP/2 SETTINGS frame serialisation helpers in `h2_frame_parser.zig`.
 - The validation flow now targets Bun release binaries for fair comparisons instead of accidentally picking debug builds.
-- Serve-side evaluation showed Bun is a good fit for the HTTP server path, especially for the native HTTP/1 experiment that is now covered by smoke tests.
 
 Validation app:
 
@@ -73,7 +74,8 @@ Validation app:
 
 Observations:
 
-- Switching the serve path to Bun was worth pursuing because it improved the Bun-native serve path without changing the UI5 middleware model used by this repo.
+- Express works reliably on Bun for both HTTP/1 and HTTP/2. The custom BunNativeApp approach was removed from the main path because Express already handles all the middleware, routing, and streaming needs correctly, reducing maintenance surface.
+- Re-enabling worker-based theme builds on Bun improved parallelism for theme-heavy fixtures. The `minify` worker pool is kept disabled on Bun as a conservative choice to avoid potential hangs during cleanup.
 - Native Bun build is not the general build direction for this experiment. UI5's main build path is graph- and resource-driven, and preload/custom bundles rely on UI5-specific semantics that do not map cleanly to `Bun.build`.
 - The self-contained spike is intentionally narrow: Bun.build handled the dedicated ESM example naturally, while the current UI5 self-contained bundler logged parse errors for ESM `import` and `export` and emitted only a minimal preload-oriented bundle. That makes it useful as a boundary check, not as a drop-in replacement plan.
 
