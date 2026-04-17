@@ -310,7 +310,72 @@ Any future agent continuing the Bun optimization work should start from this doc
 - Actual validation commands now always resolve the sibling Bun fork outputs, preferring `../bun/build/release/bun`, and the sibling CLI fork entrypoint.
 - Fresh `compare:fixtures` after that cleanup measured Node `33.50 s` vs Bun `31.83 s`, with Bun ahead by `1.67 s` overall and `1.65 s` on total build time.
 
-## 2026-04-16 Self-Contained Bun.build Spike
+## 2026-04-17 PoC Review Improvements
+
+Changes were applied across both forks via the `improvements/poc-review` branches (now merged to `main`):
+
+### Bun fork (single commit on main):
+- Changed `process.binding("stream_wrap").streamBaseState` from a plain Array to `Uint8Array` using `JSC::JSUint8Array::create()`, matching Node.js behavior
+- Added "keep in sync" comments to HTTP/2 SETTINGS serialization helpers in `h2_frame_parser.zig`
+- Removed redundant `!!` in tls.ts `Symbol.hasInstance` check
+
+### CLI fork (5 commits on main):
+1. Replaced BunNativeApp with Express for all serve modes (BunNativeApp preserved in tree for experiments)
+2. Removed redundant Bun check in `http2Support.js`
+3. Fixed misleading test name and removed duplicate test in `http2Support` tests
+4. Re-enabled worker-based theme building on Bun (`buildThemes`), added documentation comments to worker pool logic
+5. Added explanatory header to `bunJsdocRunner.cjs`
+
+### Branch strategy:
+- `experiment/bun-native-serve` branch created from pre-improvement `main` to preserve the BunNativeApp approach for future Bun.serve() experimentation
+
+### Benchmark impact (post-improvements):
+- Latest comparison (2026-04-17): Node 39.85s vs Bun 38.71s, Bun faster by 1.14s (1.03x)
+- `theme.heavy.library` shows consistent +0.90s regression on Bun (worker overhead)
+- Serve times now essentially equal with Express-on-Bun
+
+## 2026-04-17 Experiment: Bun-Native Full (Bun.serve() + Bun.build Assessment)
+
+### Branch: `experiment/bun-native-full` in CLI fork
+
+This experiment explores whether Express can be eliminated from the non-H2 serve path by using Bun.serve() directly, and documents an assessment of Bun.build() for the UI5 build pipeline.
+
+### Track 1: Bun.serve() for HTTP/1 and node:http2 for HTTP/2 (implemented — Express fully eliminated)
+
+Files changed:
+- `packages/server/lib/bun/BunNativeApp.js` — major rewrite with:
+  - **HTTP/1 via Bun.serve()**: Converts between Bun's Web API Request/Response and Node.js-style req/res for the middleware chain. Uses the standalone `router` package for middleware dispatch.
+  - **HTTP/2 via node:http2**: `BunNativeH2Server` uses `node:http2.createSecureServer({allowHTTP1: true})`. The router middleware chain receives native `Http2ServerRequest`/`Http2ServerResponse` objects which already implement the full Node.js HTTP API — no wrapper needed.
+  - **Streaming response**: ReadableStream-backed `BunNativeResponse` replaces buffered `_bodyChunks` pattern. First `_write()` creates a ReadableStream and resolves the response immediately; subsequent chunks are enqueued. `end(body)` without prior `write()` bypasses streaming entirely.
+  - **Real client IP**: `server.requestIP(request)` provides accurate `remoteAddress` on socket emulation instead of faking from URL hostname
+  - **Response timeout**: 30s safety timeout in `handle()` for hung middleware chains
+  - **Module header comment**: Detailed JSDoc explaining the architecture and design decisions
+- `packages/server/lib/server.js` — conditional app creation:
+  - On Bun: always uses `BunNativeApp` for both HTTP/1 and HTTP/2
+  - For H2: calls `app.listenH2({host, port, key, cert})` which creates a `node:http2.createSecureServer`
+  - For H1: calls `app.listen({host, port})` which creates a `Bun.serve()`
+  - Express is **never loaded** on Bun — not for HTTP/1, not for HTTP/2
+  - On Node: Express + spdy path remains unchanged
+  - `_addSsl()` cleaned up to Node-only (removed dead Bun branch)
+
+### Track 2: Bun.build() assessment (documented)
+
+File: `bun-build-assessment.md` in CLI fork root
+
+Key finding: Bun.build() cannot replace UI5's bundling pipeline because:
+- Module system mismatch: UI5 uses custom AMD, Bun produces ESM/CJS/IIFE only
+- Non-JS resource embedding: UI5 embeds XML views and .properties as preload data
+- Section modes (raw, preload, provided, bundleInfo) have no Bun equivalent
+- Debug variant management doesn't map to Bun's output model
+
+### Verification:
+- All 5 smoke tests pass (build, theme, workspace, serve:native, serve:h2)
+- Full 38-fixture suite passes on Bun
+- `smoke:serve:native` exercises the BunNativeApp HTTP/1 path (Bun.serve())
+- `smoke:serve:h2` exercises the BunNativeApp HTTP/2 path (node:http2.createSecureServer) — Express NOT loaded
+
+### Key architectural insight:
+While Bun.serve()'s `fetch` handler does not support HTTP/2, the Bun runtime's `node:http2` module provides a complete HTTP/2 implementation via `createSecureServer({allowHTTP1: true})`. The native `Http2ServerRequest`/`Http2ServerResponse` objects already implement the full Node.js HTTP API, so the router middleware chain works directly without any Express prototype chain manipulation. This means Express can be fully eliminated on Bun — HTTP/1 uses Bun.serve() and HTTP/2 uses node:http2, both routed through the same `router`-based middleware dispatch.
 
 Files involved:
 
