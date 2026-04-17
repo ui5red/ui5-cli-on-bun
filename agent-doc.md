@@ -411,3 +411,36 @@ Interpretation:
 
 - This confirms the current architectural conclusion: Bun.build is useful as a narrow self-contained experiment on ESM-friendly sources, but it is not a drop-in replacement for the standard UI5 build or preload/custom bundle paths.
 - The spike should be preserved as an explanatory artifact and not expanded into the main validation suite unless the underlying UI5 module expectations change.
+
+## 2026-04-18 socket.ondata Path Investigation
+
+### Question: Is `connectionListener` in `_http_server.ts` used for actual data flow or just API compat?
+
+**Answer: API compat only for Bun's primary HTTP path.**
+
+### Two distinct `ondata` paths exist:
+
+1. **`socket.ondata` (legacy compat path)** — set in `connectionListener` at `_http_server.ts:261`
+   - Feeds raw TCP data through `HTTPParser.execute()` via `socketOnCompatData`
+   - Only activates via `"connection"`/`"secureConnection"` events on the Node.js server socket
+   - Used by: HTTPS server (`https.ts:56` binds `_connectionListener` to `"secureConnection"`)
+   - Not used by: Bun.serve()'s native HTTP handling
+
+2. **`handle.ondata` (actual body streaming)** — set in `_http_incoming.ts:262` and `_http_server.ts:926`
+   - Streams the request body from Bun's native HTTP handle to the IncomingMessage
+   - This is the real data flow path for all requests handled by `onNodeHTTPRequest` (line 585)
+   - Bound via `onDataIncomingMessage` or `NodeHTTPServerSocket.#onData`
+
+### Data flow for Bun.serve()-based HTTP server:
+
+```
+Bun.serve() → onNodeHTTPRequest (line 585)
+  → new IncomingMessage (pre-parsed headers, method, url from native layer)
+  → handle.ondata = onDataIncomingMessage (body chunks via native handle)
+  → server.emit("request", req, res)
+```
+
+The legacy `connectionListener` → `socket.ondata` → `HTTPParser` path is **never entered** for requests handled by Bun.serve(). It exists to support:
+- HTTPS server compat (`secureConnection` event)
+- Code that manually creates connections to the server
+- Node.js API surface completeness (exported as `http._connectionListener`)

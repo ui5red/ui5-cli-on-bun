@@ -154,3 +154,34 @@ These examples are the recommended way to verify that the forked Bun runtime and
 
 - `npm run spike:self-contained-bundler` runs both paths and prints the emitted bundle locations, sizes, timings, and the key observation
 - This example is intentionally not part of the main fixture suite because it is an architecture spike, not a compatibility target for the broader UI5 validation matrix
+
+## Proof-of-Concept Work
+
+The [`poc/`](./poc/) directory contains standalone proof-of-concept experiments that explore ideas beyond the main validation matrix.
+
+### ESM Migration
+
+[`poc/esm-migration/`](./poc/esm-migration/) — converting UI5's AMD modules to native ES Modules. It picks up where the self-contained bundler spike left off — instead of bundling AMD code as-is, it converts the modules themselves to `import`/`export`, enabling standard bundlers to tree-shake UI5 code.
+
+Key results: 17 modules converted across three namespaces (`sap/base/strings/`, `sap/base/util/`, `sap/base/array/`), including the stateful `sap/base/Log` and modules with ESM dependency chains. An ESM-AMD bridge allows converted and unconverted modules to coexist, and Bun.build achieves 90% size reduction through tree-shaking on a single-module import. Both eager and lazy loading modes validated in a running browser app.
+
+See the [ESM migration README](./poc/esm-migration/README.md) for the full writeup.
+
+### Performance Story
+
+When the Bun-on-UI5 experiment first measured build performance, the numbers were discouraging:
+
+| Metric | Node | Bun | Delta |
+| --- | ---: | ---: | ---: |
+| **Overall** | **47.91 s** | **65.50 s** | **Bun slower by 17.59 s** |
+| Build total | 44.50 s | 63.20 s | +18.70 s |
+
+Root causes identified and fixed:
+
+1. **Debug binary in benchmarks** — `bun-debug` was being picked up instead of release builds, adding massive artificial slowdown
+2. **Workers disabled on Bun** — Worker-based theme building was single-threaded because `workerpool`'s `child_process.fork()` mode doesn't work reliably on Bun. Fixed by switching to `workerType: "thread"` with `MessageChannel`/`MessagePort` for cross-thread fs communication
+3. **workerpool termination hangs** — Bun's `worker_threads` doesn't always report accurate idle/total worker stats. Added Bun-specific force-termination in cleanup
+4. **`process.binding("stream_wrap").streamBaseState`** — Changed from a plain Array to `Uint8Array` in the Bun fork, matching Node.js behavior. One-line C++ change that unblocked an entire npm dependency chain (`handle-thing` -> `spdy`)
+5. **Express over custom BunNativeApp** — Replaced the custom `Bun.serve()`-based adapter with standard Express, which works correctly on Bun out of the box
+
+Key takeaways: measure with production builds, worker parallelism matters, standard middleware beats custom replacements, and small shim fixes have outsized impact. Remaining hotspot is `theme.heavy.library` with a consistent +0.90s regression on Bun.
