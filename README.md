@@ -71,6 +71,9 @@ Validation app:
 
 - Added copied fixture coverage, runtime comparison commands, focused profiling commands, smoke checks for build, theme, workspace, and native serve behavior, plus a theme-heavy builder fixture.
 - Added a narrow self-contained bundler spike with `npm run spike:self-contained-bundler` to compare a real UI5 self-contained build against a dedicated Bun.build HTML+ESM bundle.
+- Added an ESM migration PoC under `poc/esm-migration/` — 17 AMD modules converted to native ES Modules with an ESM-AMD bridge for coexistence and Bun.build tree-shaking validation.
+
+Result: Bun is **1.14s faster** than Node on the full UI5 CLI build pipeline (39.85s Node vs 38.71s Bun), after starting 17.59s slower. See [Performance Story](#performance-story) for details.
 
 Observations:
 
