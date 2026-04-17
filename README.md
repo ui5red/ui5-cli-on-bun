@@ -10,16 +10,16 @@ Sibling forks used by this repo:
 
 ## Latest Comparison
 
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-17):
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-18):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 39.85 s | 38.71 s | Bun faster by 1.14 s |
-| Build total | 37.74 s | 36.75 s | Bun faster by 0.99 s |
-| Build prepare | 12.40 s | 12.26 s | Bun faster by 0.15 s |
-| Build `ui5` | 24.76 s | 23.99 s | Bun faster by 0.78 s |
-| Serve | 1.25 s | 1.19 s | Bun faster by 0.06 s |
-| Parity | 0.74 s | 0.67 s | Bun faster by 0.08 s |
+| Overall wall time | 40.28 s | 38.17 s | Bun faster by 2.11 s |
+| Build total | 38.17 s | 36.18 s | Bun faster by 1.99 s |
+| Build prepare | 12.51 s | 12.04 s | Bun faster by 0.47 s |
+| Build `ui5` | 25.09 s | 23.62 s | Bun faster by 1.47 s |
+| Serve | 1.24 s | 1.22 s | Bun faster by 0.02 s |
+| Parity | 0.76 s | 0.66 s | Bun faster by 0.10 s |
 
 ## Installation
 
@@ -73,7 +73,7 @@ Validation app:
 - Added a narrow self-contained bundler spike with `npm run spike:self-contained-bundler` to compare a real UI5 self-contained build against a dedicated Bun.build HTML+ESM bundle.
 - Added an ESM migration PoC under `poc/esm-migration/` — 17 AMD modules converted to native ES Modules with an ESM-AMD bridge for coexistence and Bun.build tree-shaking validation.
 
-Result: Bun is **1.14s faster** than Node on the full UI5 CLI build pipeline (39.85s Node vs 38.71s Bun), after starting 17.59s slower. See [Performance Story](#performance-story) for details.
+Result: Bun is **2.11s faster** than Node on the full UI5 CLI build pipeline (40.28s Node vs 38.17s Bun), after starting 17.59s slower. See [Performance Story](#performance-story) for details.
 
 Observations:
 
@@ -186,5 +186,15 @@ Root causes identified and fixed:
 3. **workerpool termination hangs** — Bun's `worker_threads` doesn't always report accurate idle/total worker stats. Added Bun-specific force-termination in cleanup
 4. **`process.binding("stream_wrap").streamBaseState`** — Changed from a plain Array to `Uint8Array` in the Bun fork, matching Node.js behavior. One-line C++ change that unblocked an entire npm dependency chain (`handle-thing` -> `spdy`)
 5. **Express over custom BunNativeApp** — Replaced the custom `Bun.serve()`-based adapter with standard Express, which works correctly on Bun out of the box
+
+Final result:
+
+| Metric | Node | Bun | Delta |
+| --- | ---: | ---: | ---: |
+| **Overall** | **40.28 s** | **38.17 s** | **Bun faster by 2.11 s** |
+| Build total | 38.17 s | 36.18 s | Bun faster by 1.99 s |
+| Build prepare | 12.51 s | 12.04 s | Bun faster by 0.47 s |
+| Build `ui5` | 25.09 s | 23.62 s | Bun faster by 1.47 s |
+| Serve | 1.24 s | 1.22 s | Bun faster by 0.02 s |
 
 Key takeaways: measure with production builds, worker parallelism matters, standard middleware beats custom replacements, and small shim fixes have outsized impact. Remaining hotspot is `theme.heavy.library` with a consistent +0.90s regression on Bun.
