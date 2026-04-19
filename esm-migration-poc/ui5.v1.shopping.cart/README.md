@@ -97,12 +97,13 @@ Because `sap-ui-core.js` executes synchronously and the `<script type="module">`
 
 ESM files are not mixed into the original source. Instead, the build process:
 
-1. `ui5 build --all` produces the standard AMD `dist/`
-2. `dist/` is copied to `dist-esm/`
-3. `Component-preload.js` is removed (prevents AMD versions from shadowing ESM-registered modules)
-4. `esm-overlay/*` is copied over `dist-esm/`
+1. `bun run build` produces the standard AMD `dist/`
+2. `build:esm` rebuilds `dist-esm/` from that output and removes `Component-preload.js`
+3. Every `esm-overlay/*.js` file is written into `dist-esm/` twice: once as the runtime module and once as the matching debug artifact using the UI5 naming that already exists in `dist/`
+4. Unused AMD-only app leftovers such as `initMockServer.js` and stale sourcemaps for replaced modules are removed
+5. The assembler validates that non-framework app modules left in `dist-esm/` no longer contain `sap.ui.define`
 
-This keeps the original app untouched and makes the ESM version a clean overlay.
+This keeps the original app untouched, treats `esm-overlay/` as the source of truth for application modules, and leaves the framework payload from `ui5 build` intact.
 
 ## Converted Modules
 

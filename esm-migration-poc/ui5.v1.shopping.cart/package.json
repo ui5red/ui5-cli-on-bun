@@ -8,7 +8,7 @@
   "scripts": {
     "start": "ui5 serve",
     "build": "ui5 build --all --clean-dest",
-    "build:esm": "ui5 build --all --clean-dest && cp -r dist/ dist-esm/ && rm -f dist-esm/Component-preload.js dist-esm/Component-preload.js.map && cp -r esm-overlay/* dist-esm/",
+    "build:esm": "bun run ../scripts/build-esm-dist.mjs",
     "serve": "bun run serve.js --dir dist --port 8080",
     "serve:esm": "bun run serve.js --dir dist-esm --port 8081",
     "test:esm-build": "bun run build-esm.js",

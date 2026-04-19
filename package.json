@@ -22,6 +22,7 @@
 		"profile:build-variant:bun": "node ./scripts/profile-build-variant.mjs bun",
 		"profile:build-variant:node": "node ./scripts/profile-build-variant.mjs node",
 		"spike:self-contained-bundler": "node ./scripts/self-contained-bundler-spike.mjs",
+		"spike:esm-bundlers": "node ./scripts/compare-esm-bundlers.mjs",
 		"ui5": "node ./scripts/run-ui5-with-local-bun.mjs",
 		"example:custom-app:serve": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app serve --open /index.html",
 		"example:custom-app:build": "node ./scripts/run-ui5-with-local-bun.mjs --cwd ./examples/custom-app build --all --dest ./dist",

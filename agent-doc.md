@@ -410,7 +410,43 @@ Validated result:
 Interpretation:
 
 - This confirms the current architectural conclusion: Bun.build is useful as a narrow self-contained experiment on ESM-friendly sources, but it is not a drop-in replacement for the standard UI5 build or preload/custom bundle paths.
+
+## 2026-04-19 Follow-up: ESM Overlay Bundler Comparison Harness
+
+Files involved:
+
+- `scripts/compare-esm-bundlers.mjs`
+- `package.json`
+- `README.md`
+- `esm-migration-poc/scripts/build-esm-dist.mjs`
+
+What changed:
+
+- Added `npm run spike:esm-bundlers` to compare direct ESM-input strategies against the shopping-cart migration PoCs.
+- The new harness targets the `esm-overlay/` trees directly instead of the assembled `dist-esm/` outputs.
+- Three strategies are implemented:
+  - Bun.build against the overlay `resources/esm-bridge.js` entrypoint
+  - esbuild bundle+splitting from the same `resources/esm-bridge.js` entrypoint
+  - Rollup `preserveModules` from `resources/esm-bridge.js`, with `index-esm.html` copied through unchanged
+- Each run writes output to an OS temp directory and emits both JSON and Markdown summaries.
+
+Why:
+
+- The current `build:esm` path is still the delivery path because it preserves UI5's framework assets and runtime shape.
+- Future bundler experiments should start from the real ESM sources, not from manipulated assembly output.
+- Rollup is a more plausible future comparison point than Bun.build for module-preserving output because the CLI RFCs already mention Rollup as a possible boundary tool once resources are filtered down to relevant inputs.
+
+Important constraint:
+
+- This harness is intentionally not wired into the main build path. It is for architectural comparison only.
+- Clean `build:esm` runs for the shopping-cart PoCs still depend on OpenUI5 SNAPSHOT resolution from `https://int.repositories.cloud.sap/artifactory/build-snapshots`.
 - The spike should be preserved as an explanatory artifact and not expanded into the main validation suite unless the underlying UI5 module expectations change.
+
+Validated follow-up:
+
+- `npm run spike:esm-bundlers` now succeeds with all three strategies for both shopping-cart PoCs.
+- Latest run on 2026-04-19 produced no `sap.ui.define` leaks for any strategy.
+- Latest timings: v1 Bun.build about 0.17 s, esbuild about 1.88 s, Rollup about 1.55 s; v2 Bun.build about 0.03 s, esbuild about 2.28 s, Rollup about 2.22 s.
 
 ## 2026-04-18 socket.ondata Path Investigation
 

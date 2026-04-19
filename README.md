@@ -71,7 +71,8 @@ Validation app:
 
 - Added copied fixture coverage, runtime comparison commands, focused profiling commands, smoke checks for build, theme, workspace, and native serve behavior, plus a theme-heavy builder fixture.
 - Added a narrow self-contained bundler spike with `npm run spike:self-contained-bundler` to compare a real UI5 self-contained build against a dedicated Bun.build HTML+ESM bundle.
-- Added ESM migration PoCs under `esm-migration-poc/` — two full shopping cart applications (UI5 v1.x and v2.0.0) with all application modules converted to native ES Modules, an ESM-AMD bridge for framework coexistence, and Bun.build tree-shaking validation.
+- Added `npm run spike:esm-bundlers` to compare Bun.build, esbuild, and Rollup directly against the `esm-overlay/` ESM inputs of the shopping-cart migration PoCs without going through the UI5 asset assembly path.
+- Added ESM migration PoCs under `esm-migration-poc/`; see that folder's README for the architecture, commands, results, and current limitations.
 
 Result: Bun is **2.11s faster** than Node on the full UI5 CLI build pipeline (40.28s Node vs 38.17s Bun), after starting 17.59s slower. See [Performance Story](#performance-story) for details.
 
@@ -106,6 +107,7 @@ Useful commands:
 - `npm run profile:fixture:bun -- --only project/application.h --repeat 3` reruns a selected Bun fixture step from a clean test state and prints min/avg/max timings plus build prep versus ui5 timing when applicable
 - `npm run profile:build-variant:bun -- --fixture builder/theme.heavy.library --repeat 3 --css-variables` profiles one build fixture repeatedly, supports task filtering like `--include-task` or `--exclude-task`, and can switch to self-contained mode with `--self-contained`
 - `npm run spike:self-contained-bundler` compares a UI5 self-contained build against a narrow Bun.build HTML+ESM spike and prints the structural difference
+- `npm run spike:esm-bundlers -- --app ui5.v1.shopping.cart` compares Bun.build, esbuild, and Rollup directly against one PoC app's `esm-overlay/` source graph and writes JSON plus Markdown summaries under a temp directory
 - `npm run smoke:build` checks the build path and verifies `dist/custom-task-marker.txt`
 - `npm run smoke:theme` checks a theme-heavy library build and verifies CSS variable output
 - `npm run smoke:workspace` builds and serves the local workspace example to verify cross-project resolution
@@ -160,19 +162,9 @@ These examples are the recommended way to verify that the forked Bun runtime and
 
 ## Proof-of-Concept Work
 
-The [`esm-migration-poc/`](./esm-migration-poc/) directory contains standalone proof-of-concept experiments that explore ESM migration of UI5 applications beyond the main validation matrix.
+The [`esm-migration-poc/`](./esm-migration-poc/) directory contains standalone UI5 ESM migration experiments that sit outside the main validation matrix.
 
-### ESM Migration — UI5 v1.x Shopping Cart
-
-[`esm-migration-poc/ui5.v1.shopping.cart/`](./esm-migration-poc/ui5.v1.shopping.cart/) — a full OpenUI5 1.148.0 shopping cart application with all 18 application modules converted to native ES Modules. Demonstrates the simpler v1.x bootstrap path where `sap-ui-core.js` loads synchronously and a `<script type="module">` can directly import the ESM bridge and start the app.
-
-### ESM Migration — UI5 v2.0.0 Shopping Cart
-
-[`esm-migration-poc/ui5.v2.shopping.cart/`](./esm-migration-poc/ui5.v2.shopping.cart/) — the same shopping cart application on UI5 2.0.0, where the bootstrap is fundamentally different: `sap-ui-boot.js` fires a `sap-ui-core-ready` CustomEvent, requiring a sync script to capture the event into a Promise before the deferred `<script type="module">` can proceed. All 18 application modules converted to ESM.
-
-### Key Results (Both Versions)
-
-Both POCs use the same ESM-AMD bridge pattern: an `esm-helpers.js` module wraps `sap.ui.require()` in Promises for top-level `await`, and an `esm-bridge.js` module pre-registers all ESM modules into ui5loader's AMD registry via `sap.ui.predefine()`. Framework dependencies remain AMD (opaque to the bundler), while app-to-app imports are native ESM (bundleable and tree-shakeable by Bun.build). Each POC includes a Bun.build test suite validating bundling, tree-shaking, minification, and dependency chain resolution.
+It includes the two migrated shopping-cart applications, the shared `build:esm` assembler, and the direct bundler comparison work. See [`esm-migration-poc/README.md`](./esm-migration-poc/README.md) for the full summary, commands, results, and current conclusions.
 
 ### Performance Story
 
