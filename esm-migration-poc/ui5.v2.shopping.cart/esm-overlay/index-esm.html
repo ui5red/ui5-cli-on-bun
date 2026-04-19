@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Shopping Cart (ESM)</title>
+
+	<!--
+		ESM Migration Strategy for UI5 v2.0.0:
+
+		1. Load sap-ui-core.js without data-sap-ui-on-init (we take over init flow)
+		2. Capture the "sap-ui-core-ready" CustomEvent with a sync script
+		   (module scripts are deferred, so the event might fire before they run)
+		3. Module script awaits core-ready, imports the ESM-AMD bridge
+		   (which registers all ESM modules into ui5loader via sap.ui.predefine),
+		   then replicates the initMockServer flow and starts ComponentSupport
+	-->
+
+	<!-- Step 1: Boot UI5 core (no data-sap-ui-on-init) -->
+	<script id="sap-ui-bootstrap"
+			src="resources/sap-ui-core.js"
+			data-sap-ui-resource-roots='{
+				"sap.ui.demo.cart" : "./",
+				"sap.ui.demo.mock": "./localService/mockdata"
+			}'
+	></script>
+
+	<!-- Step 2: Capture core-ready event (sync script runs before module scripts) -->
+	<script>
+		window.__ui5CoreReady = new Promise(function(resolve) {
+			document.addEventListener("sap-ui-core-ready", resolve, { once: true });
+		});
+	</script>
+
+	<!-- Step 3: After core ready, load bridge, then init app -->
+	<script type="module">
+		// Wait for UI5 core to be fully initialized
+		await window.__ui5CoreReady;
+
+		// Load the ESM-AMD bridge (registers all ESM app modules into ui5loader)
+		await import("./resources/esm-bridge.js");
+
+		// Replicate initMockServer flow: init mock server, then start component
+		const mockserver = await new Promise((resolve, reject) => {
+			sap.ui.require(["sap/ui/demo/cart/localService/mockserver"], resolve, reject);
+		});
+
+		try {
+			await mockserver.init();
+		} catch (oError) {
+			const MessageBox = await new Promise((resolve, reject) => {
+				sap.ui.require(["sap/m/MessageBox"], resolve, reject);
+			});
+			MessageBox.error(oError.message);
+		}
+
+		// Initialize the component
+		sap.ui.require(["sap/ui/core/ComponentSupport"]);
+	</script>
+
+</head>
+<body class="sapUiBody" id="content">
+	<div data-sap-ui-component data-name="sap.ui.demo.cart" data-id="container" data-settings="{&quot;id&quot; : &quot;cart&quot;}"></div>
+</body>
+</html>

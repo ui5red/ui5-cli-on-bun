@@ -1,0 +1,20 @@
+{
+  "name": "shopping-cart",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "author": "SAP SE",
+  "description": "UI5 Demo App - Shopping cart (v1.x with ESM migration)",
+  "scripts": {
+    "start": "ui5 serve",
+    "build": "ui5 build --all --clean-dest",
+    "build:esm": "ui5 build --all --clean-dest && cp -r dist/ dist-esm/ && rm -f dist-esm/Component-preload.js dist-esm/Component-preload.js.map && cp -r esm-overlay/* dist-esm/",
+    "serve": "bun run serve.js --dir dist --port 8080",
+    "serve:esm": "bun run serve.js --dir dist-esm --port 8081",
+    "test:esm-build": "bun run build-esm.js",
+    "clean": "rm -rf dist dist-esm"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^4"
+  }
+}

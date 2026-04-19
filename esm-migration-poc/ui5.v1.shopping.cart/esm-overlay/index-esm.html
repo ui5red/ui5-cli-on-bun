@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Shopping Cart (ESM)</title>
+
+	<!--
+		ESM Migration Strategy for UI5 v1.x:
+		1. Load sap-ui-core.js WITHOUT data-sap-ui-on-init (prevents AMD app init)
+		2. <script type="module"> imports ESM-AMD bridge (registers ESM modules
+		   into ui5loader via sap.ui.predefine), inits mock server, then starts
+		   ComponentSupport — all after the bridge is ready
+	-->
+
+	<!-- Step 1: Load UI5 core (ui5loader + AMD framework modules) -->
+	<script
+		id="sap-ui-bootstrap"
+		src="resources/sap-ui-core.js"
+		data-sap-ui-theme="sap_horizon"
+		data-sap-ui-compat-version="edge"
+		data-sap-ui-async="true"
+		data-sap-ui-resource-roots='{
+			"sap.ui.demo.cart" : "./",
+			"sap.ui.demo.mock": "./localService/mockdata"
+		}'>
+	</script>
+
+	<!-- Step 2: Import ESM bridge, init mock server, start app -->
+	<script type="module">
+		// Import the bridge — registers all ESM application modules into ui5loader
+		await import("./resources/esm-bridge.js");
+
+		// Initialize mock server (same as initMockServer.js but inline)
+		const mockserver = await new Promise((resolve, reject) => {
+			sap.ui.require(["sap/ui/demo/cart/localService/mockserver"], resolve, reject);
+		});
+
+		try {
+			await mockserver.init();
+		} catch (oError) {
+			sap.ui.require(["sap/m/MessageBox"], (MessageBox) => {
+				MessageBox.error(oError.message);
+			});
+		}
+
+		// Start the application via ComponentSupport
+		sap.ui.require(["sap/ui/core/ComponentSupport"]);
+	</script>
+
+</head>
+<body class="sapUiBody" id="content">
+	<div data-sap-ui-component data-name="sap.ui.demo.cart" data-id="container" data-settings='{"id" : "cart"}'></div>
+</body>
+</html>
