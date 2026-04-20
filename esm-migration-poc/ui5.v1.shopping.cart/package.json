@@ -9,10 +9,15 @@
     "start": "ui5 serve",
     "build": "ui5 build --all --clean-dest",
     "build:esm": "bun run ../scripts/build-esm-dist.mjs",
+    "generate:esm:source": "bun run ../scripts/generate-bridge-free-source.mjs",
+    "build:esm:source": "bun run ../scripts/build-bridge-free-source.mjs",
     "serve": "bun run serve.js --dir dist --port 8080",
     "serve:esm": "bun run serve.js --dir dist-esm --port 8081",
+    "serve:esm:source": "bun run serve.js --dir . --port 8082",
+    "serve:esm:source:debug": "bun run serve.js --dir . --port 8083",
+    "serve:esm:source:release": "bun run serve.js --dir . --port 8084",
     "test:esm-build": "bun run build-esm.js",
-    "clean": "rm -rf dist dist-esm"
+    "clean": "rm -rf dist dist-esm esm-source-bridge-free dist-esm-source-debug dist-esm-source-release"
   },
   "devDependencies": {
     "@ui5/cli": "^4"

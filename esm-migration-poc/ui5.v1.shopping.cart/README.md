@@ -185,6 +185,43 @@ bun run serve
 bun run test:esm-build
 ```
 
+## Bridge-Free Source Exploration
+
+This app now also includes a bridge-free source variant generated into `esm-source-bridge-free/`.
+
+What changes in that variant:
+
+- generated app modules bind framework dependencies through `createUi5NamespaceFacade("sap/...")` from the shared runtime instead of importing per-module `./framework/sap/...` wrapper modules
+- the HTML bootstrap uses a module entrypoint (`bootstrap.js`) instead of `resources/esm-bridge.js`
+- the app no longer uses `requireUI5` helpers in its source files
+- the variant is intentionally exploratory and still relies on the current UI5 runtime underneath
+
+Useful commands:
+
+```sh
+# Generate the bridge-free source variant
+bun run generate:esm:source
+
+# Build debug and release ESM outputs directly from that source variant
+bun run build:esm:source
+
+# Serve the generated source variant
+bun run serve:esm:source
+# Open http://localhost:8082/esm-source-bridge-free/index-esm.html
+
+# Serve the debug preserve-modules build
+bun run serve:esm:source:debug
+# Open http://localhost:8083/dist-esm-source-debug/index-esm.html
+
+# Serve the release bundled build
+bun run serve:esm:source:release
+# Open http://localhost:8084/dist-esm-source-release/index-esm.html
+```
+
+The current runtime is still not fully ESM-native. If the bridge-free variant fails at runtime, the failure is expected to surface the remaining loader-based assumptions in UI5 rather than a problem with the app-source conversion itself.
+
+The shared source-native runtime used by both v1 and v2 now also preloads the framework module set needed by the manifest and generated app code, synthesizes `dist/resources/sap-ui-version.json` from `ui5.yaml` when needed, installs a shared `sap.ui.require` import hook so `ComponentContainer` / `Component.create` resolve the app component from `_esm/Component.js` and standard `Controller.create` resolves XML-view controllers from `_esm/controller/*.controller.js` with no generated `controller/*.controller.js` wrapper files, exposes a pure-JS resource-root URL resolver so the generated `_esm/` app modules no longer call `sap.ui.require.toUrl()` directly, creates lazy `createUi5NamespaceFacade("sap/...")` bindings in generated app/bootstrap code so the app no longer imports per-module framework wrapper modules, and generates a source-native `Component-preload.js` that module-preloads `_esm/` app modules plus manifest/XML/i18n resources. The source-native debug and release outputs now preserve the `_esm/` tree too, so standard component preload requests stay on real ESM files instead of falling back to bridge-era wrapper paths. That removes eager private-loader registration, the top-level component wrapper, the direct `AppComponent` bootstrap import, the controller wrapper directory, the dedicated controller patch, and the last direct `sap.ui.require` calls from the app-owned source-native modules, while the runtime contract still remains partially loader-based because the framework files in `dist/resources` are anonymous `sap.ui.define(...)` modules that still depend on UI5's loader-managed module naming and define-queue processing.
+
 ## What the Bun.build Tests Validate
 
 The `build-esm.js` test suite validates:
