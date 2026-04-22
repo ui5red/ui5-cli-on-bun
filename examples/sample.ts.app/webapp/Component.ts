@@ -30,7 +30,8 @@ export default class Component extends UIComponent {
 
 	private async loadRuntimeIndicator(runtimeModel: JSONModel): Promise<void> {
 		try {
-			const response = await fetch("/resources/sap-ui-version.json", {
+			const versionInfoUrl = sap.ui.require.toUrl("sap-ui-version.json");
+			const response = await fetch(versionInfoUrl, {
 				method: "HEAD",
 				cache: "no-store"
 			});

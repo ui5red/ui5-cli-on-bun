@@ -19,6 +19,7 @@ const includeTasks = [];
 const excludeTasks = [];
 let cleanInstalls = false;
 let cssVariables = false;
+let experimentalSourceEsm = false;
 let selfContained = false;
 
 for (let index = 0; index < optionArgs.length; index += 1) {
@@ -68,6 +69,9 @@ for (let index = 0; index < optionArgs.length; index += 1) {
 	case "--css-variables":
 		cssVariables = true;
 		break;
+	case "--experimental-source-esm":
+		experimentalSourceEsm = true;
+		break;
 	case "--self-contained":
 		selfContained = true;
 		break;
@@ -78,6 +82,10 @@ for (let index = 0; index < optionArgs.length; index += 1) {
 
 if (!fixtureKey) {
 	throw new Error("Provide a fixture via --fixture <category/name>");
+}
+
+if (experimentalSourceEsm && selfContained) {
+	throw new Error("--experimental-source-esm and --self-contained are mutually exclusive");
 }
 
 const fixturePath = path.join(testRoot, fixtureKey);
@@ -216,6 +224,7 @@ function summarizeDurations(durations) {
 async function runUi5Build(destDir) {
 	const ui5Args = [
 		"build",
+		...(experimentalSourceEsm ? ["experimental-source-esm"] : []),
 		...(selfContained ? ["self-contained"] : []),
 		"--all",
 		"--dest",
@@ -282,6 +291,9 @@ try {
 	console.log(`Runtime: ${runtimeMode}`);
 	console.log(`Prepare once: ${formatDuration(prepareDurationMs)}`);
 	console.log(`Build runs: ${summarizeDurations(runDurations)}`);
+	if (experimentalSourceEsm) {
+		console.log("Build mode: experimental-source-esm");
+	}
 	if (selfContained) {
 		console.log("Build mode: self-contained");
 	}

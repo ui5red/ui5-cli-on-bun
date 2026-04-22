@@ -73,7 +73,7 @@ The future target should be one source graph and two official ESM output policie
 - debug: preserve modules, readable, sourcemapped, unminified
 - release: optimized, chunked, minified
 
-The current PoC bundler harness proves candidate output shapes, but this has not yet been turned into an official CLI build mode.
+The current PoC bundler harness proved the candidate output shapes, and a first local-only CLI prototype now exists in the sibling UI5 CLI fork as `ui5 build experimental-source-esm`. That prototype still needs hardening before it can be treated as a productized build mode.
 
 ## What The Local `framework-esm/` Directory Is For
 
@@ -94,18 +94,30 @@ Earlier per-module wrapper files under `framework-esm/sap/...` were useful as an
 
 Add an experimental UI5 CLI mode that builds directly from the app ESM source graph instead of rebuilding `dist-esm` from `dist`.
 
+Current local-only state:
+
+- the sibling UI5 CLI fork now has a first-pass `ui5 build experimental-source-esm` subcommand
+- it reuses the standard build for `dist/resources`, then generates `esm-source-bridge-free/` plus `dist-esm-source-debug/` and `dist-esm-source-release/` from app source
+- the `ui5-cli-on-bun` wrapper now forces `UI5_CLI_NO_LOCAL=1` so the sibling CLI checkout is actually used
+- the current local prototype now completes the same post-build source-native phase under Bun directly, so the earlier Node re-exec workaround is no longer needed, and that Bun-native path is now validated for both shopping-cart PoCs
+- the Bun CommonJS bin-entrypoint keepalive fix now has focused regression coverage in `cli/packages/cli/test/bin/ui5.js`
+- the same Bun-native path is now also validated on `examples/sample.ts.app` with `build experimental-source-esm --all --clean-dest`
+- that non-shopping-cart validation hardened the helper for optional `esm-overlay/`, TypeScript app modules, resolved component-module paths, and direct `sap/...` ESM imports rewritten to runtime facades
+- Bun now falls back to in-process `buildThemes` execution for that sample-app path because the worker-backed `MessageChannel` theme build segfaulted at `themelib_sap_horizon`; the validated command no longer needs `--exclude-task=buildThemes`
+
 Concrete work items:
 
-1. Add a CLI input mode for app-owned ESM sources.
+1. Harden the new CLI input mode for app-owned ESM sources.
 2. Treat framework modules as external during the experiment, with the current `framework-esm/` helpers limited to bootstrap/runtime compatibility work.
 3. Emit two output modes from the same source graph:
    - `dist-esm-debug`
    - `dist-esm-release`
-4. Keep the current assembler only as a fallback compatibility mode.
+4. Keep the Bun `buildThemes` path on the new in-process fallback until the upstream worker-thread `MessageChannel` crash is resolved.
+5. Keep the current assembler only as a fallback compatibility mode.
 
 Success criterion:
 
-- the CLI can produce ESM outputs without copying `dist` first.
+- the CLI can produce ESM outputs without copying `dist` first and without requiring a runtime-specific fallback.
 
 ### Phase 2: App Source Stops Calling `sap.ui.require` Directly
 
@@ -172,7 +184,7 @@ If this work continues right now, the next practical tasks should be:
 1. Decide whether the remaining central framework preload should intentionally stay loader-backed until the framework publishes named ESM entrypoints.
 2. Investigate whether any supported UI5 runtime API exists to execute anonymous framework `sap.ui.define(...)` files without `sap.ui.require()`; current loader inspection suggests the answer is no.
 3. Formalize `sap-ui-version.json` generation for source-native serve/build mode instead of leaving it as PoC-only logic.
-4. Port the current source-native experiment into the CLI fork as an experimental build mode instead of keeping it only in the PoC repo.
+4. Expand the current local CLI experimental build mode beyond the shopping-cart PoCs and decide what project configuration surface it should own.
 
 ## Bottom Line
 

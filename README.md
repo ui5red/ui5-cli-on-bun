@@ -10,16 +10,16 @@ Sibling forks used by this repo:
 
 ## Latest Comparison
 
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-18):
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-23, Bun `1.3.13-canary.1+40eff4488`):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 40.28 s | 38.17 s | Bun faster by 2.11 s |
-| Build total | 38.17 s | 36.18 s | Bun faster by 1.99 s |
-| Build prepare | 12.51 s | 12.04 s | Bun faster by 0.47 s |
-| Build `ui5` | 25.09 s | 23.62 s | Bun faster by 1.47 s |
-| Serve | 1.24 s | 1.22 s | Bun faster by 0.02 s |
-| Parity | 0.76 s | 0.66 s | Bun faster by 0.10 s |
+| Overall wall time | 48.97 s | 41.24 s | Bun faster by 7.73 s |
+| Build total | 43.95 s | 38.86 s | Bun faster by 5.10 s |
+| Build prepare | 12.30 s | 13.01 s | Node faster by 0.71 s |
+| Build `ui5` | 31.08 s | 25.29 s | Bun faster by 5.79 s |
+| Serve | 3.97 s | 1.55 s | Bun faster by 2.43 s |
+| Parity | 0.92 s | 0.73 s | Bun faster by 0.19 s |
 
 ## Installation
 
@@ -58,7 +58,8 @@ This repository validates coordinated changes across the sibling UI5 CLI fork, t
 UI5 CLI fork:
 
 - Serve path uses Express on Bun for both HTTP/1 and HTTP/2 modes. An earlier experiment with a custom `BunNativeApp` (Bun.serve()-based Express reimplementation) was replaced in favour of standard Express, which works correctly on Bun out of the box. The BunNativeApp approach is preserved on the `experiment/bun-native-serve` branch for future Bun.serve() experimentation.
-- Worker-based theme building (`buildThemes`) is re-enabled on Bun using `workerType: "thread"` and `MessageChannel`/`MessagePort` for cross-thread fs communication. The `minify` task still uses single-threaded execution on Bun because workerpool's graceful termination can hang during task orchestration cleanup.
+- Worker-based theme building (`buildThemes`) remains disabled on Bun because the MessageChannel/MessagePort worker path still crashes real framework builds under Bun. The `minify` task still uses single-threaded execution on Bun because workerpool cleanup remains fragile there as well.
+- The ongoing `experimental-source-esm` investigation now stays under `esm-migration-poc/` and is intentionally excluded from the copied `test/` fixture matrix so the main comparison stays focused on the core runtime validation suite.
 - Kept the graph-driven build and the existing UI5 LBT bundling pipeline in place. We evaluated whether Bun-native bundling could replace that path and did not take it forward as the main plan.
 
 Bun fork:
@@ -74,12 +75,15 @@ Validation app:
 - Added `npm run spike:esm-bundlers` to compare Bun.build, esbuild, and Rollup directly against the `esm-overlay/` ESM inputs of the shopping-cart migration PoCs without going through the UI5 asset assembly path.
 - Added ESM migration PoCs under `esm-migration-poc/`; see that folder's README for the architecture, commands, results, and current limitations.
 
-Result: Bun is **2.11s faster** than Node on the full UI5 CLI build pipeline (40.28s Node vs 38.17s Bun), after starting 17.59s slower. See [Performance Story](#performance-story) for details.
+Result: With `builder/application.experimental.esm` removed from the active fixture matrix, the latest cold `npm run compare:fixtures` rerun has Bun **7.73s faster** than Node on the main fixture comparison (41.24s Bun vs 48.97s Node). Bun wins overall build time, `ui5` execution, serve, and parity; Node only remains slightly ahead in build preparation. See [Performance Story](#performance-story) for the before-versus-after context.
 
 Observations:
 
 - Express works reliably on Bun for both HTTP/1 and HTTP/2. The custom BunNativeApp approach was removed from the main path because Express already handles all the middleware, routing, and streaming needs correctly, reducing maintenance surface.
-- Re-enabling worker-based theme builds on Bun improved parallelism for theme-heavy fixtures. The `minify` worker pool is kept disabled on Bun as a conservative choice to avoid potential hangs during cleanup.
+- Bun still uses in-process theme building instead of the worker-based `buildThemes` path because the MessageChannel/MessagePort worker variant is still unstable on Bun during real framework builds.
+- The earlier post-rebase Bun regression was partly caused by `minify` workers being re-enabled on Bun. Restoring the Bun single-threaded `minify` path materially improved the next full `compare:fixtures` rerun.
+- With the experimental ESM fixture removed from the suite, the largest remaining Bun regressions in the current run are small (`project/application.c2` at +0.30 s and `project/application.e` at +0.26 s), while the biggest Bun wins are `builder/application.a` (-5.31 s) and `serve server/application.a` (-2.43 s).
+- The bridge-free/source-native ESM work now continues under [`esm-migration-poc/`](./esm-migration-poc/) instead of the copied benchmark fixture matrix.
 - Native Bun build is not the general build direction for this experiment. UI5's main build path is graph- and resource-driven, and preload/custom bundles rely on UI5-specific semantics that do not map cleanly to `Bun.build`.
 - The self-contained spike is intentionally narrow: Bun.build handled the dedicated ESM example naturally, while the current UI5 self-contained bundler logged parse errors for ESM `import` and `export` and emitted only a minimal preload-oriented bundle. That makes it useful as a boundary check, not as a drop-in replacement plan.
 
@@ -175,15 +179,16 @@ When the Bun-on-UI5 experiment first measured build performance, the numbers wer
 | **Overall** | **47.91 s** | **65.50 s** | **Bun slower by 17.59 s** |
 | Build total | 44.50 s | 63.20 s | +18.70 s |
 
-Root causes identified and fixed:
+Key improvements since that first pass:
 
 1. **Debug binary in benchmarks** — `bun-debug` was being picked up instead of release builds, adding massive artificial slowdown
-2. **Workers disabled on Bun** — Worker-based theme building was single-threaded because `workerpool`'s `child_process.fork()` mode doesn't work reliably on Bun. Fixed by switching to `workerType: "thread"` with `MessageChannel`/`MessagePort` for cross-thread fs communication
-3. **workerpool termination hangs** — Bun's `worker_threads` doesn't always report accurate idle/total worker stats. Added Bun-specific force-termination in cleanup
-4. **`process.binding("stream_wrap").streamBaseState`** — Changed from a plain Array to `Uint8Array` in the Bun fork, matching Node.js behavior. One-line C++ change that unblocked an entire npm dependency chain (`handle-thing` -> `spdy`)
-5. **Express over custom BunNativeApp** — Replaced the custom `Bun.serve()`-based adapter with standard Express, which works correctly on Bun out of the box
+2. **`process.binding("stream_wrap").streamBaseState`** — Changed from a plain Array to `Uint8Array` in the Bun fork, matching Node.js behavior. One-line C++ change that unblocked an entire npm dependency chain (`handle-thing` -> `spdy`)
+3. **Express over custom BunNativeApp** — Replaced the custom `Bun.serve()`-based adapter with standard Express, which works correctly on Bun out of the box
+4. **Benchmarking against the actual release binary** — The validation flow now resolves `build/release/bun` first so comparisons are not skewed by debug builds or fallback binaries
+5. **Worker-based theme/minify remains an active tradeoff** — The current Bun validation path keeps `buildThemes` in-process and the `minify` worker pool disabled because the MessageChannel and worker cleanup paths are still unstable on Bun, and a fresh attempt to re-enable Bun theme workers still crashed the real framework build
+6. **The experimental ESM investigation is now out of the main fixture matrix** — `compare:fixtures` is back to tracking the copied core validation suite, while bridge-free/source-native ESM work continues under `esm-migration-poc/`
 
-Final result:
+Best local result before the latest rebase check (2026-04-18):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
@@ -193,4 +198,17 @@ Final result:
 | Build `ui5` | 25.09 s | 23.62 s | Bun faster by 1.47 s |
 | Serve | 1.24 s | 1.22 s | Bun faster by 0.02 s |
 
-Key takeaways: measure with production builds, worker parallelism matters, standard middleware beats custom replacements, and small shim fixes have outsized impact. Remaining hotspot is `theme.heavy.library` with a consistent +0.90s regression on Bun.
+Latest rebase check after removing `builder/application.experimental.esm` from the active fixture matrix (2026-04-23, Bun `1.3.13-canary.1+40eff4488`):
+
+| Metric | Node | Bun | Delta |
+| --- | ---: | ---: | ---: |
+| **Overall** | **48.97 s** | **41.24 s** | **Bun faster by 7.73 s** |
+| Build total | 43.95 s | 38.86 s | Bun faster by 5.10 s |
+| Build prepare | 12.30 s | 13.01 s | Node faster by 0.71 s |
+| Build `ui5` | 31.08 s | 25.29 s | Bun faster by 5.79 s |
+| Serve | 3.97 s | 1.55 s | Bun faster by 2.43 s |
+| Parity | 0.92 s | 0.73 s | Bun faster by 0.19 s |
+
+This exact `npm run compare:fixtures` rerun excludes the dedicated experimental-source-esm fixture so the main benchmark stays focused on the copied runtime validation suite. On that suite Bun is back to a clear overall lead, driven mainly by faster `ui5` execution and a much faster serve run.
+
+Key takeaways: measure with production builds, keep the worker stability tradeoff explicit, standard middleware still beats custom replacements, and keep the bridge-free/source-native ESM investigation isolated in [`esm-migration-poc/`](./esm-migration-poc/) instead of letting it skew the main fixture comparison.

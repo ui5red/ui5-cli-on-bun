@@ -101,10 +101,15 @@ export async function spawnUi5(ui5Args, options = {}) {
 	const runtimeMode = options.runtimeMode || getRuntimeMode();
 	const runtimeBinary = runtimeMode === "bun" ? await findBunBinary() : await findNodeBinary();
 	const ui5CliEntry = await getUi5CliEntry();
+	const env = getRuntimeEnv(runtimeMode, options.env || process.env);
+
+	if (env.UI5_CLI_NO_LOCAL == null) {
+		env.UI5_CLI_NO_LOCAL = "1";
+	}
 
 	return spawn(runtimeBinary, [ui5CliEntry, ...ui5Args], {
 		cwd: options.cwd || sampleRoot,
-		env: getRuntimeEnv(runtimeMode, options.env || process.env),
+		env,
 		stdio: options.stdio || "inherit",
 		signal: options.signal
 	});

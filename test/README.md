@@ -46,4 +46,6 @@ npm run test:fixtures:node -- --only parity:fs/glob
 
 The suite builds the copied fixtures that are standalone UI5 projects, runs runtime-matched parity checks against the copied `cli`, `fs`, and `project` fixtures using the CLI fork modules directly, and serves the copied server fixture.
 
+Bridge-free/source-native ESM investigation now continues only under [`../esm-migration-poc/`](../esm-migration-poc/README.md) and is intentionally excluded from the copied fixture suite.
+
 The `project/err.application.a` fixture is intentionally treated as an expected failure because it is an error-case fixture in the original CLI test set.

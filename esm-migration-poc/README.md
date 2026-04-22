@@ -77,6 +77,8 @@ Validated state in this workspace:
 - `ui5.v1.shopping.cart` now also generates a bridge-free source variant in `esm-source-bridge-free/` and builds source-native debug and release ESM outputs in `dist-esm-source-debug/` and `dist-esm-source-release/`.
 - `ui5.v2.shopping.cart` now generates the same bridge-free source variant and source-native debug/release outputs, and browser probing confirms that both the source-root and release source-native pages mount a UI view end to end.
 - The shared source-native runtime now captures `sap-ui-core-ready`, synthesizes `dist/resources/sap-ui-version.json` from `ui5.yaml` when needed, preloads the framework module set needed by the manifest and generated app code, installs a shared `sap.ui.require` import hook so `ComponentContainer` / `Component.create` resolve the app component from `_esm/Component.js` and standard `Controller.create` resolves XML-view controllers from `_esm/controller/*.controller.js` without generated controller wrapper files, exposes a pure-JS resource-root URL resolver so the generated `_esm/` app modules no longer call `sap.ui.require.toUrl()` directly, creates lazy `createUi5NamespaceFacade("sap/...")` bindings in generated app/bootstrap code so app-owned source no longer imports per-module `framework/sap/...` wrapper modules, and answers standard `Component-preload.js` requests with a generated source-native preload script that module-preloads `_esm/` app modules plus manifest/XML/i18n resources.
+- The sibling local UI5 CLI fork now exposes an experimental `ui5 build experimental-source-esm` mode that first runs the standard build, then generates `esm-source-bridge-free/` and emits `dist-esm-source-debug/` plus `dist-esm-source-release/` directly from source. The local wrapper now forces `UI5_CLI_NO_LOCAL=1` by default so it actually uses the sibling CLI checkout instead of the app-local `node_modules/@ui5/cli` install, and the current local prototype now completes that flow under Bun without a Node re-exec. That Bun-native path is now validated through both the direct CLI entrypoint and the wrapper-backed flow for `ui5.v1.shopping.cart` and `ui5.v2.shopping.cart`.
+- This folder is now the only active home for that `experimental-source-esm` investigation; the copied benchmark fixture was removed from `compare:fixtures` so the main runtime metrics stay focused on the core validation suite.
 
 Most recent comparative results from `npm run spike:esm-bundlers`:
 
@@ -122,6 +124,17 @@ bun run build:esm:source
 bun run serve:esm:source
 # open /esm-source-bridge-free/index-esm.html on the served port
 ```
+
+For the local CLI-owned version of the same source-native build flow from the repository root:
+
+```sh
+node ./scripts/run-ui5-with-local-bun.mjs \
+	--cwd ./esm-migration-poc/ui5.v1.shopping.cart \
+	build experimental-source-esm --all --clean-dest
+```
+
+That wrapper path now defaults to the sibling CLI fork even when the app has its own local `@ui5/cli` dependency, so no extra `UI5_CLI_NO_LOCAL=1` export is required.
+Swap `ui5.v1.shopping.cart` for `ui5.v2.shopping.cart` to run the same wrapper-backed validation against the UI5 `2.0.0-SNAPSHOT` PoC.
 
 Current runtime status:
 
