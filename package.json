@@ -37,6 +37,7 @@
 		"smoke:build": "node ./scripts/build-smoke.mjs",
 		"smoke:theme": "node ./scripts/theme-build-smoke.mjs",
 		"smoke:workspace": "npm run example:workspace-app:build && node ./scripts/workspace-serve-smoke.mjs",
+		"smoke:sample:source-esm": "node ./scripts/sample-source-esm-smoke.mjs",
 		"smoke:serve:native": "node ./scripts/serve-native-smoke.mjs",
 		"smoke:serve:h2": "node ./scripts/serve-h2-smoke.mjs",
 		"smoke": "npm run smoke:build && npm run smoke:theme && npm run smoke:workspace && npm run smoke:serve:native && npm run smoke:serve:h2"

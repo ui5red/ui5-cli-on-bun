@@ -192,6 +192,51 @@ function reportError(error) {
   console.error(error);
 }
 
+function showUi5Error(error) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  reportError(error);
+
+  try {
+    MessageBox.error(message);
+  } catch (messageBoxError) {
+    reportError(messageBoxError);
+  }
+}
+
+function waitForComponentStartup(container, appNamespace) {
+  return new Promise((resolve, reject) => {
+    let isSettled = false;
+
+    const complete = (callback) => (value) => {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+      clearTimeout(timeoutId);
+      callback(value);
+    };
+
+    container.attachComponentCreated(complete(event => resolve(event.getParameter("component"))));
+    container.attachComponentFailed(complete(event => reject(event.getParameter("reason"))));
+
+    const timeoutId = setTimeout(() => {
+      const contentNode = document.getElementById("content");
+      const componentInstance = typeof container.getComponentInstance === "function"
+        ? container.getComponentInstance()
+        : null;
+
+      reject(new Error(
+        "Timed out waiting for ComponentContainer startup for " + appNamespace +
+        "; componentInstance=" + (componentInstance ? "present" : "missing") +
+        "; contentChildren=" + (contentNode?.childElementCount ?? "n/a") +
+        "; contentHtmlLength=" + (contentNode?.innerHTML?.length ?? "n/a"),
+      ));
+    }, 5000);
+  });
+}
+
 window.addEventListener("error", event => {
   reportError(event.error || event.message);
 });
@@ -213,8 +258,7 @@ if (manifestPreloadModules.length > 0) {
 try {
   await mockserver.init();
 } catch (error) {
-  MessageBox.error(error.message);
-  reportError(error);
+  showUi5Error(error);
 }
 
 let container;
@@ -231,17 +275,11 @@ try {
     width: "100%",
   });
 
-  const componentCreated = new Promise((resolve, reject) => {
-    container.attachComponentCreated(event => resolve(event.getParameter("component")));
-    container.attachComponentFailed(event => reject(event.getParameter("reason")));
-  });
-
   container.placeAt("content");
-  await componentCreated;
+  await waitForComponentStartup(container, appNamespace);
 } catch (error) {
   container?.destroy();
-  MessageBox.error(error.message);
-  reportError(error);
+  showUi5Error(error);
 }
 `.trimStart();
 }

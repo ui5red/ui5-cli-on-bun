@@ -137,7 +137,10 @@ export async function loadUi5Module(moduleName) {
   const ui5Global = getUi5Global();
 
   return await new Promise((resolve, reject) => {
-    ui5Global.sap.ui.require([moduleName], resolve, reject);
+    ui5Global.sap.ui.require([moduleName], (moduleValue) => {
+      cacheResolvedUi5ModuleExport(normalizeUi5ModuleName(moduleName), moduleValue);
+      resolve(moduleValue);
+    }, reject);
   });
 }
 
@@ -146,7 +149,12 @@ export async function loadUi5Modules(...moduleNames) {
   const ui5Global = getUi5Global();
 
   return await new Promise((resolve, reject) => {
-    ui5Global.sap.ui.require(moduleNames, (...modules) => resolve(modules), reject);
+    ui5Global.sap.ui.require(moduleNames, (...modules) => {
+      for (let index = 0; index < moduleNames.length; index += 1) {
+        cacheResolvedUi5ModuleExport(normalizeUi5ModuleName(moduleNames[index]), modules[index]);
+      }
+      resolve(modules);
+    }, reject);
   });
 }
 
@@ -232,18 +240,70 @@ function resolveUi5GlobalExport(moduleName) {
     throw new Error(`Cannot resolve invalid UI5 module name ${String(moduleName)}`);
   }
 
+  if (ui5ModuleImportExports.has(normalizedModuleName)) {
+    return ui5ModuleImportExports.get(normalizedModuleName);
+  }
+
+  const globalExport = resolveUi5NamespaceExport(normalizedModuleName);
+  if (globalExport != null) {
+    cacheResolvedUi5ModuleExport(normalizedModuleName, globalExport);
+    return globalExport;
+  }
+
+  const loaderExport = resolveUi5LoaderExport(normalizedModuleName);
+  if (loaderExport != null) {
+    cacheResolvedUi5ModuleExport(normalizedModuleName, loaderExport);
+    return loaderExport;
+  }
+
+  throw new Error(
+    `UI5 namespace export ${normalizedModuleName} is not available on globalThis or via sap.ui.requireSync; preload the module before using the facade`,
+  );
+}
+
+function resolveUi5NamespaceExport(normalizedModuleName) {
   let currentValue = getHostGlobal();
   for (const segment of normalizedModuleName.split("/")) {
     currentValue = currentValue?.[segment];
   }
 
-  if (currentValue == null) {
-    throw new Error(
-      `UI5 namespace export ${normalizedModuleName} is not available on globalThis; preload the module before using the facade`,
-    );
+  return currentValue ?? null;
+}
+
+function resolveUi5LoaderExport(normalizedModuleName) {
+  const sapUi = getUi5Global().sap.ui;
+  if (typeof sapUi.requireSync !== "function") {
+    return null;
   }
 
-  return currentValue;
+  for (const candidateModuleName of getUi5ModuleCandidates(normalizedModuleName)) {
+    try {
+      const moduleValue = sapUi.requireSync(candidateModuleName);
+      if (moduleValue != null) {
+        return moduleValue;
+      }
+    } catch {
+      // Fall through to the next candidate so facades can resolve loader-cached exports.
+    }
+  }
+
+  return null;
+}
+
+function getUi5ModuleCandidates(normalizedModuleName) {
+  return normalizedModuleName.endsWith(".js")
+    ? [normalizedModuleName]
+    : [normalizedModuleName, `${normalizedModuleName}.js`];
+}
+
+function cacheResolvedUi5ModuleExport(normalizedModuleName, moduleValue) {
+  if (!normalizedModuleName || moduleValue == null) {
+    return;
+  }
+
+  for (const candidateModuleName of getUi5ModuleCandidates(normalizedModuleName)) {
+    ui5ModuleImportExports.set(candidateModuleName, moduleValue);
+  }
 }
 
 function getUi5BootstrapResourceConfig() {

@@ -24,7 +24,7 @@ That split is now clear in this repository:
 - `ui5.v2.shopping.cart/esm-source-bridge-free/` is now generated the same way, using the same shared source-generator and source-build flow.
 - `ui5.v1.shopping.cart/dist-esm-source-debug/` and `ui5.v1.shopping.cart/dist-esm-source-release/` now demonstrate source-native debug and release ESM outputs built from that variant.
 - `ui5.v2.shopping.cart/dist-esm-source-debug/` and `ui5.v2.shopping.cart/dist-esm-source-release/` are now produced too, which means the source-build path itself is no longer v1-only.
-- The shared source-native runtime now mounts both v1 and v2 by preloading the framework module set needed by the manifest and generated app code, synthesizing `sap-ui-version.json` when needed, installing a shared `sap.ui.require` import hook that redirects the app component module to `_esm/Component.js` and resolves app controller modules from `_esm/controller/*.controller.js`, generating a source-native `Component-preload.js` that module-preloads `_esm/` app modules plus manifest/XML/i18n resources, creating lazy `createUi5NamespaceFacade("sap/...")` bindings in generated app/bootstrap code instead of importing per-module `framework/sap/...` wrappers, and starting through async `ComponentContainer` / `Component.create` rather than direct `AppComponent` construction.
+- The shared source-native runtime now reaches the same preload/import-hook/runtime-facade contract for both PoCs, and the latest headless Chrome DOM probes confirm mounted `sapUiComponentContainer` plus `cart---app` root-view DOM in both source-root and release mode.
 
 What this means in practice:
 
@@ -63,8 +63,8 @@ The latest source-native runtime probes now show a narrower blocker shape:
 - the early `sap.ui` bootstrap race can be mitigated with synchronous `sap-ui-core-ready` capture plus a shared runtime helper
 - the current runtime expectation for `dist/resources/sap-ui-version.json` can be satisfied from `ui5.yaml` during source-native builds
 - manifest-driven framework classes can be preloaded, standard `Component-preload.js` requests can be answered by a generated source-native preload script, the root component can start through `ComponentContainer` / `Component.create` by redirecting `sap/ui/demo/cart/Component` to `_esm/Component.js`, XML-view controller resolution can now stay on standard `Controller.create` while the shared `sap.ui.require` import hook resolves `sap/ui/demo/cart/controller/*.controller` to `_esm/controller/*.controller.js` without `sap.ui.predefine()` source overlays, `sap.ui.loader._.defineModuleSync()` registration, or generated controller wrapper files, and the generated `_esm` app modules can resolve app/mock resource URLs without direct `sap.ui.require.toUrl()` calls
-- async `ComponentContainer` startup can then mount the v2 views end to end while request logs stay on `Component-preload.js`, `_esm/Component.js`, and `_esm/controller/*.controller.js` instead of top-level `Component.js` or `/controller/*.controller.js` wrapper modules
-- the remaining blocker is no longer “can v2 render?”, “can the root component avoid loader startup?”, or “can controller wrappers disappear?” but “can the remaining name-resolved surfaces become first-class ESM without relying on explicit UI5 runtime hooks?”
+- the latest smoke now confirms that those runtime hooks are sufficient for both shopping-cart PoCs to mount in both source-root and release mode under the current experimental contract
+- the remaining blocker is no longer “can the shopping-cart PoCs mount under the current runtime hooks?” but “how much of that hook-heavy contract can be collapsed or productized as first-class source-native UI5 ESM support?”
 
 ### 3. Debug vs Release Output Is Not Formalized Yet
 
@@ -183,8 +183,7 @@ If this work continues right now, the next practical tasks should be:
 
 1. Decide whether the remaining central framework preload should intentionally stay loader-backed until the framework publishes named ESM entrypoints.
 2. Investigate whether any supported UI5 runtime API exists to execute anonymous framework `sap.ui.define(...)` files without `sap.ui.require()`; current loader inspection suggests the answer is no.
-3. Formalize `sap-ui-version.json` generation for source-native serve/build mode instead of leaving it as PoC-only logic.
-4. Expand the current local CLI experimental build mode beyond the shopping-cart PoCs and decide what project configuration surface it should own.
+3. Expand the current local CLI experimental build mode beyond the shopping-cart PoCs and decide what project configuration surface it should own.
 
 ## Bottom Line
 

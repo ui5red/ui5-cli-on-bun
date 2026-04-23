@@ -1,8 +1,9 @@
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { spawn } from "node:child_process";
+import { ensureSapUiVersionInfo } from "./ensure-sap-ui-version-info.mjs";
 
 const appRoot = process.cwd();
 const sourceRoot = path.join(appRoot, "esm-source-bridge-free");
@@ -138,102 +139,6 @@ async function listFiles(dirPath) {
 async function ensureCleanDir(dirPath) {
   await rm(dirPath, { force: true, recursive: true });
   await mkdir(dirPath, { recursive: true });
-}
-
-async function ensureSapUiVersionInfo(resourcesDir, ui5YamlPath) {
-  const versionInfoPath = path.join(resourcesDir, "sap-ui-version.json");
-
-  try {
-    await readFile(versionInfoPath, "utf8");
-    return;
-  } catch (error) {
-    if (error?.code !== "ENOENT") {
-      throw error;
-    }
-  }
-
-  const frameworkConfig = await readFrameworkConfig(ui5YamlPath);
-  const versionInfo = {
-    name: frameworkConfig.name ?? "OpenUI5",
-    version: frameworkConfig.version ?? "0.0.0-bridge-free-source",
-    buildTimestamp: null,
-    scmRevision: null,
-    libraries: frameworkConfig.libraries.map(name => ({ name })),
-  };
-
-  await mkdir(resourcesDir, { recursive: true });
-  await writeFile(versionInfoPath, `${JSON.stringify(versionInfo, null, 2)}\n`, "utf8");
-  log(`generated ${versionInfoPath}`);
-}
-
-async function readFrameworkConfig(ui5YamlPath) {
-  const yamlText = await readFile(ui5YamlPath, "utf8");
-  const frameworkConfig = {
-    name: null,
-    version: null,
-    libraries: [],
-  };
-
-  let inFramework = false;
-  let inLibraries = false;
-
-  for (const line of yamlText.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
-
-    const indent = line.match(/^\s*/)[0].length;
-    if (indent === 0) {
-      inFramework = trimmed === "framework:";
-      inLibraries = false;
-      continue;
-    }
-
-    if (!inFramework) {
-      continue;
-    }
-
-    if (indent === 2 && trimmed.startsWith("name:")) {
-      frameworkConfig.name = parseYamlScalar(trimmed);
-      continue;
-    }
-
-    if (indent === 2 && trimmed.startsWith("version:")) {
-      frameworkConfig.version = parseYamlScalar(trimmed);
-      continue;
-    }
-
-    if (indent === 2 && trimmed === "libraries:") {
-      inLibraries = true;
-      continue;
-    }
-
-    if (indent === 4 && inLibraries && trimmed.startsWith("- name:")) {
-      frameworkConfig.libraries.push(parseYamlScalar(trimmed.replace(/^-\s*/, "")));
-      continue;
-    }
-
-    if (indent <= 2) {
-      inLibraries = false;
-    }
-  }
-
-  return frameworkConfig;
-}
-
-function parseYamlScalar(line) {
-  const quotedMatch = line.match(/:\s*"([^"]+)"/);
-  if (quotedMatch) {
-    return quotedMatch[1];
-  }
-
-  const singleQuotedMatch = line.match(/:\s*'([^']+)'/);
-  if (singleQuotedMatch) {
-    return singleQuotedMatch[1];
-  }
-
-  return line.split(":").slice(1).join(":").split("#")[0].trim();
 }
 
 async function runCommand(command, args, options) {

@@ -251,12 +251,14 @@ bun run serve:esm:source:release
 # Open http://localhost:8084/dist-esm-source-release/index-esm.html
 ```
 
+The source-native serve commands now run a shared `prepare:esm:source` step first so `dist/resources/sap-ui-version.json` is present even when the source-native pages are served without rerunning the full source-native build flow.
+
 Because UI5 v2 bootstraps asynchronously, the bridge-free source variant depends on the shared runtime helper to wait for an already-initialized core or the `sap-ui-core-ready` event before starting the app module bootstrap. Any remaining runtime failure is therefore expected to indicate loader-based UI5 assumptions rather than a missed app-source conversion.
 
 The current source-native runtime contract is:
 
 - wait for the captured `sap-ui-core-ready` signal before the module bootstrap continues
-- synthesize `dist/resources/sap-ui-version.json` from `ui5.yaml` when the normal build output does not provide it
+- materialize `dist/resources/sap-ui-version.json` from `ui5.yaml` before source-native build and serve flows when the normal build output does not provide it
 - preload the framework module set needed by the manifest and generated app code
 - answer standard `Component-preload.js` requests with a generated source-native preload script that module-preloads `_esm/` app modules and prefetches manifest/XML/i18n/metadata resources
 - create lazy `createUi5NamespaceFacade("sap/...")` bindings in generated app/bootstrap code instead of importing per-module `./framework/sap/...` wrapper modules
@@ -267,6 +269,6 @@ The current source-native runtime contract is:
 
 Current probe status:
 
-- the bridge-free source variant now generates, builds, serves, and mounts a UI5 view from the app root under the same source-native flow as v1
-- browser probing confirms the rendered shopping-cart UI with no page errors; request logging now shows `Component-preload.js` in both the source-root and release flows, followed by `_esm/Component.js` and direct `_esm/controller/*.controller.js` fetches with no top-level `Component.js` or `/controller/*.controller.js` wrapper requests, and the only remaining console noise is the expected locale fallback 404s for `i18n_en_US.properties` and `i18n_en.properties`
+- the bridge-free source variant now generates, builds, serves, and mounts from the app root under the same source-native flow as v1
+- the latest headless Chrome DOM probes confirm the rendered root UI in both the source-root and release flows: the final DOM contains a mounted `sapUiComponentContainer`, the `cart---app` root view subtree, and no surfaced `#esm-errors`
 - the latest narrowing step also removed per-module `framework/sap/...` wrapper imports from generated app/bootstrap code; the remaining architectural gap is no longer view rendering, eager loader registration, root-component startup, generated controller wrappers, or direct `sap.ui.require` calls in the app-owned source-native modules, but the fact that the remaining name-resolved runtime seams still depend on explicit UI5 runtime hooks and a loader-managed central framework preload rather than a truly first-class loader-free path

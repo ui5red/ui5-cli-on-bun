@@ -10,16 +10,16 @@ Sibling forks used by this repo:
 
 ## Latest Comparison
 
-Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-23, Bun `1.3.13-canary.1+40eff4488`):
+Latest local runtime comparison (`npm run compare:fixtures`, 2026-04-23, Bun `1.3.13`):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| Overall wall time | 48.97 s | 41.24 s | Bun faster by 7.73 s |
-| Build total | 43.95 s | 38.86 s | Bun faster by 5.10 s |
-| Build prepare | 12.30 s | 13.01 s | Node faster by 0.71 s |
-| Build `ui5` | 31.08 s | 25.29 s | Bun faster by 5.79 s |
-| Serve | 3.97 s | 1.55 s | Bun faster by 2.43 s |
-| Parity | 0.92 s | 0.73 s | Bun faster by 0.19 s |
+| Overall wall time | 40.30 s | 30.73 s | Bun faster by 9.57 s |
+| Build total | 36.77 s | 28.99 s | Bun faster by 7.78 s |
+| Build prepare | 10.54 s | 9.66 s | Bun faster by 0.88 s |
+| Build `ui5` | 25.79 s | 18.93 s | Bun faster by 6.86 s |
+| Serve | 2.74 s | 1.13 s | Bun faster by 1.61 s |
+| Parity | 0.68 s | 0.53 s | Bun faster by 0.15 s |
 
 ## Installation
 
@@ -75,14 +75,14 @@ Validation app:
 - Added `npm run spike:esm-bundlers` to compare Bun.build, esbuild, and Rollup directly against the `esm-overlay/` ESM inputs of the shopping-cart migration PoCs without going through the UI5 asset assembly path.
 - Added ESM migration PoCs under `esm-migration-poc/`; see that folder's README for the architecture, commands, results, and current limitations.
 
-Result: With `builder/application.experimental.esm` removed from the active fixture matrix, the latest cold `npm run compare:fixtures` rerun has Bun **7.73s faster** than Node on the main fixture comparison (41.24s Bun vs 48.97s Node). Bun wins overall build time, `ui5` execution, serve, and parity; Node only remains slightly ahead in build preparation. See [Performance Story](#performance-story) for the before-versus-after context.
+Result: With `builder/application.experimental.esm` removed from the active fixture matrix, the latest cold `npm run compare:fixtures` rerun has Bun **9.57 s faster** than Node on the main fixture comparison (30.73 s Bun vs 40.30 s Node). Bun now leads in every reported phase total: overall wall time, build total, build preparation, `ui5` execution, serve, and parity. See [Performance Story](#performance-story) for the before-versus-after context.
 
 Observations:
 
 - Express works reliably on Bun for both HTTP/1 and HTTP/2. The custom BunNativeApp approach was removed from the main path because Express already handles all the middleware, routing, and streaming needs correctly, reducing maintenance surface.
 - Bun still uses in-process theme building instead of the worker-based `buildThemes` path because the MessageChannel/MessagePort worker variant is still unstable on Bun during real framework builds.
 - The earlier post-rebase Bun regression was partly caused by `minify` workers being re-enabled on Bun. Restoring the Bun single-threaded `minify` path materially improved the next full `compare:fixtures` rerun.
-- With the experimental ESM fixture removed from the suite, the largest remaining Bun regressions in the current run are small (`project/application.c2` at +0.30 s and `project/application.e` at +0.26 s), while the biggest Bun wins are `builder/application.a` (-5.31 s) and `serve server/application.a` (-2.43 s).
+- With the experimental ESM fixture removed from the suite, the largest remaining Bun regressions in the current run are still small (`project/application.d` at +0.31 s and `project/application.e` at +0.20 s), while the biggest Bun wins are `builder/application.a` (-2.88 s) and `serve server/application.a` (-1.61 s).
 - The bridge-free/source-native ESM work now continues under [`esm-migration-poc/`](./esm-migration-poc/) instead of the copied benchmark fixture matrix.
 - Native Bun build is not the general build direction for this experiment. UI5's main build path is graph- and resource-driven, and preload/custom bundles rely on UI5-specific semantics that do not map cleanly to `Bun.build`.
 - The self-contained spike is intentionally narrow: Bun.build handled the dedicated ESM example naturally, while the current UI5 self-contained bundler logged parse errors for ESM `import` and `export` and emitted only a minimal preload-oriented bundle. That makes it useful as a boundary check, not as a drop-in replacement plan.
@@ -147,6 +147,9 @@ This repository now includes example projects under `examples/` that are fully u
 
 - `npm run example:sample-ts-app:serve` serves the app from the local forks and opens the sample UI
 - `npm run example:sample-ts-app:build` runs a full dependency-inclusive build and keeps the real `buildThemes` path active for the framework libraries and theme library
+- `npm run smoke:sample:source-esm` runs the sibling CLI `experimental-source-esm` flow for the sample app, serves the generated source-root and release outputs, and uses headless Chrome page evaluation to wait for a mounted component container plus the rendered `Say Hello` button text instead of scraping `--dump-dom` output
+
+Set `UI5_CHROME_BINARY` if Google Chrome is not installed at the default macOS path used by that smoke script.
 
 To compare the same controlled example against Node while still using the same forked UI5 CLI, reuse the same scripts with `UI5_RUNTIME_MODE=node`, for example:
 
@@ -198,17 +201,17 @@ Best local result before the latest rebase check (2026-04-18):
 | Build `ui5` | 25.09 s | 23.62 s | Bun faster by 1.47 s |
 | Serve | 1.24 s | 1.22 s | Bun faster by 0.02 s |
 
-Latest rebase check after removing `builder/application.experimental.esm` from the active fixture matrix (2026-04-23, Bun `1.3.13-canary.1+40eff4488`):
+Latest rebase check after removing `builder/application.experimental.esm` from the active fixture matrix (2026-04-23, Bun `1.3.13`):
 
 | Metric | Node | Bun | Delta |
 | --- | ---: | ---: | ---: |
-| **Overall** | **48.97 s** | **41.24 s** | **Bun faster by 7.73 s** |
-| Build total | 43.95 s | 38.86 s | Bun faster by 5.10 s |
-| Build prepare | 12.30 s | 13.01 s | Node faster by 0.71 s |
-| Build `ui5` | 31.08 s | 25.29 s | Bun faster by 5.79 s |
-| Serve | 3.97 s | 1.55 s | Bun faster by 2.43 s |
-| Parity | 0.92 s | 0.73 s | Bun faster by 0.19 s |
+| **Overall** | **40.30 s** | **30.73 s** | **Bun faster by 9.57 s** |
+| Build total | 36.77 s | 28.99 s | Bun faster by 7.78 s |
+| Build prepare | 10.54 s | 9.66 s | Bun faster by 0.88 s |
+| Build `ui5` | 25.79 s | 18.93 s | Bun faster by 6.86 s |
+| Serve | 2.74 s | 1.13 s | Bun faster by 1.61 s |
+| Parity | 0.68 s | 0.53 s | Bun faster by 0.15 s |
 
-This exact `npm run compare:fixtures` rerun excludes the dedicated experimental-source-esm fixture so the main benchmark stays focused on the copied runtime validation suite. On that suite Bun is back to a clear overall lead, driven mainly by faster `ui5` execution and a much faster serve run.
+This exact `npm run compare:fixtures` rerun excludes the dedicated experimental-source-esm fixture so the main benchmark stays focused on the copied runtime validation suite. On that suite Bun now has an even clearer overall lead, driven mainly by faster `ui5` execution, a much faster serve run, and a smaller but real win in build preparation.
 
 Key takeaways: measure with production builds, keep the worker stability tradeoff explicit, standard middleware still beats custom replacements, and keep the bridge-free/source-native ESM investigation isolated in [`esm-migration-poc/`](./esm-migration-poc/) instead of letting it skew the main fixture comparison.
